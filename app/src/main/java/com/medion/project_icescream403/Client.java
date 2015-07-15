@@ -6,11 +6,15 @@ import android.os.Message;
 import android.os.Process;
 import android.util.Log;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 
 /**
@@ -18,16 +22,26 @@ import java.net.UnknownHostException;
  */
 public class Client implements Runnable {
     private final String host = "140.113.210.29";
-    private final int port = 8000;
+    private final int port = 9000;
     private Handler mHandler;
     private Socket socket;
-    private boolean isSend;
+    private String cmd;
+    private String testStr; //test
+
+    private boolean needWrite;
+    private boolean toUpdateGUI;
 
     private int test = 0;
+    private int state;
+
 
     public Client(Handler mHandler) {
         this.mHandler = mHandler;
-        isSend = false;
+        toUpdateGUI = false;
+        cmd = null;
+        testStr = "";
+        needWrite = false;
+        state = ClientState.WRITE;
     }
 
     @Override
@@ -41,49 +55,56 @@ public class Client implements Runnable {
         try {
             while(true) {
                 if (socket == null || socket.isConnected() == false) {
-                    Message msg = new Message();
-                    msg.what = ClientState.connecting;
+                    /*
+                        Waiting for connection and retry to connect server
+                     */
+                    Message msg = mHandler.obtainMessage();
+                    msg.what = ClientState.CONNECTING;
                     mHandler.sendMessage(msg);
                     Thread.sleep(1500);
                     socket = new Socket(host, port);
-                    isSend = true;
+                    toUpdateGUI = true;
                 } else if (socket.isConnected()){
-                    if (isSend) {
-                        Message msg = new Message();
-                        msg.what = ClientState.connected;
+                    /*
+                        Already connect to server
+                     */
+                    if (toUpdateGUI) {
+                        Message msg = mHandler.obtainMessage();
+                        msg.what = ClientState.CONNECTED;
                         mHandler.sendMessage(msg);
-                        isSend = false;
+                        toUpdateGUI = false;
                     }
+
+                    exchangeDataWithServer();
+                    /*DataInputStream in = new DataInputStream(socket.getInputStream());
+                    DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                    byte[] bytes = new byte[1024];
+
                     if (test == 0) {
-                        DataInputStream in = new DataInputStream(socket.getInputStream());
-                        DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                        String word = null;
+                        byte[] bytes1 = new String("CONNECT MS_M<END>").getBytes();
+                        int bytesRead;
+                        out.write(bytes1);
+                        bytesRead = in.read(bytes1);
 
-                        out.writeUTF("CONNECT SH_1<END>");
-
-                        word = in.readUTF();
-
-                        if (word != null) {
-                            Log.v("Client", word);
-                            Thread.sleep(3000);
-                        } else {
-                            Log.v("Client", "Not receive from server");
-
-                        }
-
-                        out.writeUTF("CONNECT SH_1<END>");
-
-                        word = in.readUTF();
-                        if (word != null) {
-                            Log.v("Client", word);
-                            Thread.sleep(3000);
-                        } else {
-                            Log.v("Client", "Not receive from server");
-
+                        if (bytesRead > 0) {
+                            String tmp = new String(bytes1, 0, bytesRead, Charset.forName("UTF-8"));
+                            if (tmp.contains("<END>")) {
+                                Log.v("Clinet", tmp);
+                            }
                         }
 
                         test = 1;
-                    }
+                    } else {
+                        Log.v("Clinet", "Receiving");
+                        int bytesRead;
+                        bytesRead = in.read(bytes);
+
+                        if (bytesRead > 0) {
+                            String tmp = new String(bytes, 0, bytesRead);
+                            Log.v("Clinet", tmp);
+                        }
+                        Log.v("Clinet", "Receiving End");
+                    }*/
                 }
             }
         } catch(UnknownHostException e) {
@@ -94,4 +115,47 @@ public class Client implements Runnable {
 
         }
     }
+
+    private void exchangeDataWithServer() {
+        try {
+            DataInputStream in = new DataInputStream(socket.getInputStream());
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+            if ((state == ClientState.WRITE) && needWrite) {
+
+                byte[] writeData = cmd.getBytes();
+                out.write(writeData);
+                needWrite = false;
+                if (cmd.contains("<END>"))
+                    state = ClientState.READ;
+
+            } else if (state == ClientState.READ){
+
+                int bytesRead;
+                byte[] readData = new byte[1024];
+                bytesRead = in.read(readData);
+
+                if (bytesRead > 0) {
+                    String tmp = new String(readData, 0, bytesRead, Charset.forName("UTF-8"));
+                    testStr += tmp;
+
+                    if (testStr.contains("<END>")) {
+                        Log.v("Clinet", testStr);
+                        testStr = "";
+                        state = ClientState.WRITE;
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+
+        }
+    }
+
+
+    public void setCmd(String cmd, boolean needWrite) {
+        this.cmd = cmd;
+        this.needWrite = needWrite;
+    }
+
 }

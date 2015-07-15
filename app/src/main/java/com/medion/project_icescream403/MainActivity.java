@@ -1,7 +1,8 @@
 package com.medion.project_icescream403;
 
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.support.v7.app.ActionBarActivity;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.os.Handler;
 import android.os.Message;
@@ -19,41 +20,21 @@ public class MainActivity extends ActionBarActivity {
 
 
     private ProgressDialog dialog;
-
-    private Handler mHandler = new Handler() {
-
-        @Override
-        public void handleMessage(Message msg) {
-            TextView textView = (TextView) findViewById(R.id.text_view);
-
-            switch (msg.what) {
-                case ClientState.connecting:
-                    dialog.setTitle("Info");
-                    dialog.setMessage("Connecting!!");
-                    dialog.show();
-                    dialog.setCancelable(false);
-                    break;
-                case ClientState.connected:
-                    textView.setText("Socket built already!");
-                    dialog.dismiss();
-                    break;
-
-
-            }
-            super.handleMessage(msg);
-        }
-
-    };
+    private HandlerExtension mHandler;
+    private Thread t;
+    private Client client;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        dialog = new ProgressDialog(this);
-        Thread t = new Thread(new Client(mHandler));
-        t.start();
 
+        dialog = new ProgressDialog(this);
+        mHandler = new HandlerExtension();
+        client = new Client(mHandler);
+        t = new Thread(client);
+        t.start();
     }
 
     @Override
@@ -65,10 +46,51 @@ public class MainActivity extends ActionBarActivity {
     protected void onDestroy() {
         super.onDestroy();
 
+    }
+
+    private void displayDialog(int state) {
+        switch (state) {
+            case ClientState.CONNECTING:
+                dialog.setTitle("Info");
+                dialog.setMessage("Connecting!!");
+                dialog.show();
+                dialog.setCancelable(false);
+                break;
+            case ClientState.CONNECTED:
+                //drawGUI();
+                dialog.dismiss();
+                break;
+        }
+    }
+
+    private void drawGUI() {
+        TextView textView = (TextView) findViewById(R.id.text_view);
+
+        textView.setText("Socket built");
 
     }
 
 
+    private class HandlerExtension extends Handler {
+
+        @Override
+        public void handleMessage(Message msg) {
+            displayDialog(msg.what);
+
+            super.handleMessage(msg);
+        }
+    }
+
+    public void sendToSocket(View view) {
+        EditText editText = (EditText) findViewById(R.id.edit_view);
+        TextView textView = (TextView) findViewById(R.id.text_view);
+
+        if (editText.length() > 0) {
+            textView.setText(editText.getText());
+            client.setCmd(editText.getText().toString(), true);
+            editText.setText("");
+        }
+    }
 }
 
 /*@Override
