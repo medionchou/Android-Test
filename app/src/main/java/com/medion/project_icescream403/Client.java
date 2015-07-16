@@ -14,7 +14,10 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -26,12 +29,12 @@ public class Client implements Runnable {
     private Handler mHandler;
     private Socket socket;
     private String cmd;
-    private String testStr; //test
+    private String serverReply;
+    private List< List<Mix> > mixGroup;
 
     private boolean needWrite;
     private boolean toUpdateGUI;
 
-    private int test = 0;
     private int state;
 
 
@@ -39,9 +42,10 @@ public class Client implements Runnable {
         this.mHandler = mHandler;
         toUpdateGUI = false;
         cmd = null;
-        testStr = "";
+        serverReply = "";
         needWrite = false;
         state = ClientState.WRITE;
+        mixGroup = new LinkedList<>();
     }
 
     @Override
@@ -108,11 +112,13 @@ public class Client implements Runnable {
                 }
             }
         } catch(UnknownHostException e) {
+            /*Server not exist*/
 
         } catch(IOException e ) {
+            /*Socket error*/
 
         } catch(InterruptedException e) {
-
+            /**/
         }
     }
 
@@ -137,25 +143,67 @@ public class Client implements Runnable {
 
                 if (bytesRead > 0) {
                     String tmp = new String(readData, 0, bytesRead, Charset.forName("UTF-8"));
-                    testStr += tmp;
+                    serverReply += tmp;
 
-                    if (testStr.contains("<END>")) {
-                        Log.v("Clinet", testStr);
-                        testStr = "";
+                    if (serverReply.contains("<END>")) {
+
+                        if (serverReply.contains("MIX")) {
+                            groupMix(serverReply);
+                        }
+
+                        serverReply = "";
                         state = ClientState.WRITE;
                     }
                 }
             }
 
         } catch (IOException e) {
-
+            /*Error on interacting with server*/
         }
     }
-
 
     public void setCmd(String cmd, boolean needWrite) {
         this.cmd = cmd;
         this.needWrite = needWrite;
     }
 
+    private void groupMix(String serverReply) {
+
+        String[] ingredients = serverReply.split("<N>|<END>");
+        List<Mix> item = new LinkedList<>();
+
+        for (int i = 0; i < ingredients.length; i++) {
+            if (ingredients[i].length() > 0) {
+                String[] element = ingredients[i].split(" ");
+
+                item.add(new Mix(Integer.parseInt(element[1]), element[2], Double.parseDouble(element[3])));
+            }
+        }
+        mixGroup.add(item);
+
+        for (int i = 0; i < mixGroup.size(); i++) {
+            List<Mix> tmp = mixGroup.get(i);
+            for (int j = 0; j < tmp.size(); j++) {
+                Log.v("Client", tmp.get(j).toString());
+            }
+        }
+
+    }
+
+
+    private class Mix {
+        private int id;
+        private String name;
+        private double weight;
+
+        public Mix(int id, String name, double weight) {
+            this.id = id;
+            this.name = name;
+            this.weight = weight;
+        }
+
+        public String toString() {
+            return id + " " + name + " " + weight;
+        }
+    }
 }
