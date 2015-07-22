@@ -1,5 +1,6 @@
 package com.medion.project_icescream403;
 
+import android.content.Intent;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.v7.app.ActionBarActivity;
@@ -8,13 +9,17 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import com.medion.project_icescream403.Client;
 import com.medion.project_icescream403.ClientState;
 import com.medion.project_icescream403.R;
+
+import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends ActionBarActivity {
 
@@ -34,30 +39,57 @@ public class MainActivity extends ActionBarActivity {
         mHandler = new HandlerExtension();
         client = new Client(mHandler);
         t = new Thread(client);
+
         t.start();
     }
 
     @Override
-    protected void onPause() {
+    protected synchronized void onPause() {
         super.onPause();
+
+        // block connection until activity restart again
+        try {
+            t.wait();
+        } catch (InterruptedException e) {
+            Log.w("Client", "Thread wait error!" + e.getMessage());
+        }
+
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // block connection until activity restart again
+        /*try {
+            t.wait();
+        } catch (InterruptedException e) {
+
+        }*/
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (t.isInterrupted())
+            notify();
     }
 
     @Override
     protected void onDestroy() {
+        t.interrupt();
         super.onDestroy();
-
     }
 
     private void displayDialog(int state) {
         switch (state) {
             case ClientState.CONNECTING:
-                dialog.setTitle("Info");
-                dialog.setMessage("Connecting!!");
+                dialog.setTitle(getString(R.string.progress_title));
+                dialog.setMessage(getString(R.string.progress_message));
                 dialog.show();
                 dialog.setCancelable(false);
                 break;
             case ClientState.CONNECTED:
-                //drawGUI();
                 dialog.dismiss();
                 break;
         }
@@ -70,7 +102,6 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
-
     private class HandlerExtension extends Handler {
 
         @Override
@@ -81,7 +112,7 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    public void sendToSocket(View view) {
+    public void sendToClient(View view) {
         EditText editText = (EditText) findViewById(R.id.edit_view);
         TextView textView = (TextView) findViewById(R.id.text_view);
 
