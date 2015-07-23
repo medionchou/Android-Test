@@ -20,6 +20,7 @@ import com.medion.project_icescream403.ClientState;
 import com.medion.project_icescream403.R;
 
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
 
@@ -28,57 +29,65 @@ public class MainActivity extends ActionBarActivity {
     private HandlerExtension mHandler;
     private Thread t;
     private Client client;
-
+    private List< List<Mix> > mixGroup;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initObject();
+        t.start();
+    }
+
+    private void initObject() {
 
         dialog = new ProgressDialog(this);
         mHandler = new HandlerExtension();
         client = new Client(mHandler);
         t = new Thread(client);
-
-        t.start();
     }
 
-    @Override
-    protected synchronized void onPause() {
-        super.onPause();
-
-        // block connection until activity restart again
-        try {
-            t.wait();
-        } catch (InterruptedException e) {
-            Log.w("Client", "Thread wait error!" + e.getMessage());
-        }
-
-
+    private void deRefObject() {
+        dialog = null;
+        mHandler = null;
+        client = null;
+        t = null;
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        // block connection until activity restart again
-        /*try {
-            t.wait();
-        } catch (InterruptedException e) {
+        Log.v("Client", "onStop");
+        if (mixGroup == null) {
+            mixGroup = client.getMixGroup();
+        }
+        t.interrupt();
+        client.terminate();
+        if (dialog.isShowing())
+            dialog.dismiss();
 
-        }*/
+        deRefObject();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (t.isInterrupted())
-            notify();
+
+        if (t == null) {
+            Log.v("Client", "thread is null");
+            initObject();
+            if (mixGroup != null) {
+                client.setMixGroup(mixGroup);
+            }
+
+            t.start();
+        }
     }
 
     @Override
     protected void onDestroy() {
-        t.interrupt();
         super.onDestroy();
+        mixGroup = null;
     }
 
     private void displayDialog(int state) {
@@ -90,6 +99,7 @@ public class MainActivity extends ActionBarActivity {
                 dialog.setCancelable(false);
                 break;
             case ClientState.CONNECTED:
+                Log.v("Client", "Dismiss");
                 dialog.dismiss();
                 break;
         }
@@ -123,25 +133,3 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 }
-
-/*@Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }*/

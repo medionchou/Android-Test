@@ -9,6 +9,8 @@ import android.util.Log;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -25,14 +27,15 @@ public class Client implements Runnable {
 
     private Handler mHandler;
     private Socket socket;
-    private DataInputStream in;
-    private DataOutputStream out;
+    private InputStream in;
+    private OutputStream out;
     private String cmd;
     private String serverReply;
     private List< List<Mix> > mixGroup;
 
     private boolean needWrite;
     private boolean updateGUI;
+    private boolean isTerminated;
 
     private int state;
 
@@ -40,9 +43,10 @@ public class Client implements Runnable {
     public Client(Handler mHandler) {
         this.mHandler = mHandler;
         updateGUI = false;
+        needWrite = false;
+        isTerminated = false;
         cmd = null;
         serverReply = "";
-        needWrite = false;
         state = ClientState.WRITE;
         mixGroup = new LinkedList<>();
     }
@@ -56,33 +60,36 @@ public class Client implements Runnable {
 
     private void setUpConnection() {
         try {
-
-            while(true) {
-                if (socket == null || !socket.isConnected()) {
+            while(!isTerminated) {
+                if (socket == null) {
                     /*
                         Waiting for connection and retry to connect to server
                      */
+                    Log.v("Client", "updateGUI connecting");
                     Message msg = mHandler.obtainMessage();
                     msg.what = ClientState.CONNECTING;
                     mHandler.sendMessage(msg);
                     Thread.sleep(1500);
                     socket = new Socket(SERVER_IP, SERVER_PORT);
-                    in = new DataInputStream(socket.getInputStream());
-                    out = new DataOutputStream(socket.getOutputStream());
+                    in = socket.getInputStream();
+                    out = socket.getOutputStream();
                     updateGUI = true;
 
-                } else if (socket.isConnected()){
+                } else if (socket != null){
                     /*
                         Already connect to server
                      */
-                    if (updateGUI) {
-                        Message msg = mHandler.obtainMessage();
-                        msg.what = ClientState.CONNECTED;
-                        mHandler.sendMessage(msg);
-                        updateGUI = false;
-                    }
+                    if (socket.isConnected()) {
+                        if (updateGUI) {
+                            Log.v("Client", "updateGUI");
+                            Message msg = mHandler.obtainMessage();
+                            msg.what = ClientState.CONNECTED;
+                            mHandler.sendMessage(msg);
+                            updateGUI = false;
+                        }
 
-                    exchangeDataWithServer();
+                        exchangeDataWithServer();
+                    }
                 }
             }
         } catch(UnknownHostException e) {
@@ -95,7 +102,25 @@ public class Client implements Runnable {
 
         } catch(InterruptedException e) {
             /**/
-            Log.e("Client", "InterruptedException 96");
+            Log.e("Client", "Thread sleep exceptiong 105 " + e.toString());
+
+        } finally {
+            try {
+                if (socket != null) {
+                    socket.close();
+                    socket = null;
+                }
+                if (in != null) {
+                    in.close();
+                    in = null;
+                }
+                if (out != null) {
+                    out.close();
+                    out = null;
+                }
+            } catch (IOException err) {
+                Log.e("Client", "IOException 111 " +  err.toString());
+            }
         }
     }
 
@@ -107,7 +132,9 @@ public class Client implements Runnable {
                 byte[] writeData = cmd.getBytes();
                 out.write(writeData);
                 needWrite = false;
-                if (cmd.contains("<END>"))
+                String subStr = cmd.substring(cmd.length() - 5 , cmd.length());
+                Log.v("Client", subStr);
+                if (subStr.equals("<END>"))
                     state = ClientState.READ;
 
             } else if (state == ClientState.READ){
@@ -120,10 +147,13 @@ public class Client implements Runnable {
 
                 bytesRead = in.read(readData);
                 if (bytesRead > 0) {
-                    String tmp = new String(readData, 0, bytesRead, Charset.forName("UTF-8"));
+                    String tmp = new String(readData, 0, bytesRead);
                     serverReply += tmp;
 
-                    if (serverReply.contains("<END>")) {
+                    String subStr = serverReply.substring(serverReply.length() - 5, serverReply.length());
+                    Log.v("Client", subStr);
+                    if (subStr.equals("<END>")) {
+                        serverReply = new String(serverReply.getBytes(), Charset.forName("UTF-8"));
 
                         if (serverReply.contains("MIX")) {
                             groupMix(serverReply);
@@ -133,15 +163,34 @@ public class Client implements Runnable {
                         state = ClientState.WRITE;
                     }
                 } else { // Server socket closed
+                    in.close();
+                    out.close();
                     socket.close();
                     socket = null;
+                    in = null;
+                    out = null;
                 }
             }
 
         } catch (IOException e) {
             /*Error on interacting with server*/
             Log.e("Client", "IOException 136");
-            socket = null;
+            try {
+                if (socket != null) {
+                    socket.close();
+                    socket = null;
+                }
+                if (in != null) {
+                    in.close();
+                    in = null;
+                }
+                if (out != null) {
+                    out.close();
+                    out = null;
+                }
+            } catch (IOException err) {
+                Log.e("Client", "IOException 111 " +  err.toString());
+            }
         }
     }
 
@@ -150,8 +199,38 @@ public class Client implements Runnable {
         this.needWrite = needWrite;
     }
 
+    public List< List<Mix> > getMixGroup(){
+        return mixGroup;
+    }
+
+    public void setMixGroup(List< List<Mix>> mix) {
+        mixGroup = mix;
+    }
+
+    public void terminate() {
+        isTerminated = true;
+
+        try {
+            if (socket != null) {
+                socket.close();
+                socket = null;
+            }
+            if (in != null) {
+                in.close();
+                in = null;
+            }
+            if (out != null) {
+                out.close();
+                out = null;
+            }
+        } catch (IOException err) {
+            Log.e("Client", "IOException 220 " +  err.toString());
+        }
+
+    }
 
     private void groupMix(String serverReply) {
+
         String[] ingredients = serverReply.split("\\t|<N>|<END>");
         List<Mix> item = new LinkedList<>();
 
@@ -168,19 +247,4 @@ public class Client implements Runnable {
         }
     }
 
-    private class Mix {
-        private String id;
-        private String name;
-        private double weight;
-
-        public Mix(String id, String name, double weight) {
-            this.id = id;
-            this.name = name;
-            this.weight = weight;
-        }
-
-        public String toString() {
-            return id + " " + name + " " + weight;
-        }
-    }
 }
