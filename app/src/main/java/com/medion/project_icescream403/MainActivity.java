@@ -1,29 +1,19 @@
 package com.medion.project_icescream403;
 
-import android.content.Intent;
-import android.os.HandlerThread;
-import android.os.Looper;
-import android.support.v7.app.ActionBarActivity;
+
 import android.app.ProgressDialog;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 
-import com.medion.project_icescream403.Client;
-import com.medion.project_icescream403.ClientState;
-import com.medion.project_icescream403.R;
-
-import java.io.UnsupportedEncodingException;
+import java.lang.ref.WeakReference;
 import java.util.List;
 
-public class MainActivity extends ActionBarActivity {
-
+public class MainActivity extends AppCompatActivity {
 
     private ProgressDialog dialog;
     private HandlerExtension mHandler;
@@ -42,7 +32,7 @@ public class MainActivity extends ActionBarActivity {
     private void initObject() {
 
         dialog = new ProgressDialog(this);
-        mHandler = new HandlerExtension();
+        mHandler = new HandlerExtension(this);
         client = new Client(mHandler);
         t = new Thread(client);
     }
@@ -52,6 +42,21 @@ public class MainActivity extends ActionBarActivity {
         mHandler = null;
         client = null;
         t = null;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (t == null) {
+            Log.v("Client", "thread is null");
+            initObject();
+            if (mixGroup != null) {
+                client.setMixGroup(mixGroup);
+            }
+
+            t.start();
+        }
     }
 
     @Override
@@ -69,20 +74,6 @@ public class MainActivity extends ActionBarActivity {
         deRefObject();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (t == null) {
-            Log.v("Client", "thread is null");
-            initObject();
-            if (mixGroup != null) {
-                client.setMixGroup(mixGroup);
-            }
-
-            t.start();
-        }
-    }
 
     @Override
     protected void onDestroy() {
@@ -105,31 +96,36 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    private void drawGUI() {
-        TextView textView = (TextView) findViewById(R.id.text_view);
+    private static class HandlerExtension extends Handler {
+        private WeakReference<MainActivity> weakRef;
 
-        textView.setText("Socket built");
-
-    }
-
-    private class HandlerExtension extends Handler {
+        public HandlerExtension(MainActivity activity) {
+            weakRef = new WeakReference<>(activity);
+        }
 
         @Override
         public void handleMessage(Message msg) {
-            displayDialog(msg.what);
-
             super.handleMessage(msg);
+            MainActivity activity = weakRef.get();
+
+            if (activity != null) {
+                activity.displayDialog(msg.what);
+            }
         }
     }
 
-    public void sendToClient(View view) {
-        EditText editText = (EditText) findViewById(R.id.edit_view);
-        TextView textView = (TextView) findViewById(R.id.text_view);
+    public void connect(View view) {
 
-        if (editText.length() > 0) {
-            textView.setText(editText.getText());
-            client.setCmd(editText.getText().toString(), true);
-            editText.setText("");
-        }
+        client.setCmd("CONNECT MS_M<END>");
+    }
+
+    public void debug1(View view) {
+
+        client.setCmd("DEBUG_MIX 1<END>");
+    }
+
+    public void debug2(View view) {
+
+        client.setCmd("DEBUG_MIX 2<END>");
     }
 }
