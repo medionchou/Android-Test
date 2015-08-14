@@ -33,7 +33,7 @@ public class Scale {
     private UsbDeviceConnection connection;
     private UsbManager usbManager;
     private RetrieveScaleData retrieveScaleData;
-    private ScaleWeight scaleWeight = new ScaleWeight();
+    private final ScaleWeight scaleWeight = new ScaleWeight();
     private boolean stop = false;
     private boolean disconnect = false;
 
@@ -96,7 +96,6 @@ public class Scale {
         String[] netWeightInfo = data[4].split("[ ]+");
 
         synchronized (scaleWeight) {
-
             if (netWeightInfo[1].equals("+")) {
                 scaleWeight.setPositive(true);
             } else {
@@ -104,14 +103,12 @@ public class Scale {
             }
             scaleWeight.setWeightValue(Double.valueOf(netWeightInfo[2]));
 
-            Log.v("Client_scale", String.valueOf(scaleWeight.getWeight()));
+            //Log.v("Client_scale", String.valueOf(scaleWeight.getWeight()));
         }
     }
 
-    public ScaleWeight getScaleWeight() {
-        synchronized (scaleWeight) {
-            return scaleWeight;
-        }
+    public synchronized ScaleWeight getScaleWeight() {
+        return scaleWeight;
     }
 
 

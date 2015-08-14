@@ -27,6 +27,7 @@
             android:layout_height="wrap_content"
             android:onClick="debug2"
             android:text="Debug2" />
+
     </LinearLayout>
 
     <RelativeLayout
@@ -61,6 +62,7 @@
             android:layout_marginTop="10dp"
             android:layout_below="@+id/recipe_text_view"
             android:textAppearance="?android:textAppearanceLarge"
+            android:id="@+id/recipeID_text_view"
             android:text="配方ID"/>
 
         <TextView
@@ -82,6 +84,7 @@
             android:layout_below="@+id/product_text_view"
             android:layout_alignParentRight="true"
             android:textAppearance="?android:textAppearanceLarge"
+            android:id="@+id/productID_text_view"
             android:text="產品ID"/>
 
 
@@ -115,7 +118,7 @@
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
             android:text="確認"
-            android:id="@+id/confirm"/>
+            android:id="@+id/confirm" />
 
 
     </RelativeLayout>

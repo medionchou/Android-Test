@@ -11,4 +11,6 @@
 
     <string name="progress_warning">警告</string>
     <string name="restart_message">未偵測磅秤連線\n系統將於 5 秒後重啟 !!</string>
+
+    <string name="no_data">尚無配料資料</string>
 </resources>

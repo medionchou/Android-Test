@@ -24,4 +24,21 @@ public class Recipe {
     public String toString() {
         return ingredientID + " " + ingredientName + " " + productID + " " + productName + " " + weight + " " + weightUnit;
     }
+
+    public String getIngredientName() {
+        return ingredientName;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public double getWeight() {
+        return weight;
+    }
+
+    public String getWeightUnit() {
+        return weightUnit;
+    }
+
 }

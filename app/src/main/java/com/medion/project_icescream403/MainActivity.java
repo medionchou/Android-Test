@@ -12,6 +12,9 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -29,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private ScaleManager scaleManager;
     private Client client;
     private List< List<Recipe> > recipeGroup;
+    private Button confirmButton;
 
     private Scale[] scales;
 
@@ -76,7 +80,9 @@ public class MainActivity extends AppCompatActivity {
         clientThread = new Thread(client);
         scaleManager = new ScaleManager(scales);
         scaleThread = new Thread(scaleManager);
-
+        confirmButton = (Button) findViewById(R.id.confirm);
+        confirmButton.setEnabled(false);
+        confirmButton.setOnClickListener(new ButtonListener());
     }
 
     private void deRefObject() {
@@ -124,7 +130,9 @@ public class MainActivity extends AppCompatActivity {
             recipeGroup = client.getRecipeGroup();
         }
         clientThread.interrupt();
+        scaleThread.interrupt();
         client.terminate();
+        scaleManager.terminate();
         if (dialog.isShowing())
             dialog.dismiss();
 
@@ -204,28 +212,77 @@ public class MainActivity extends AppCompatActivity {
 
         private Scale[] scales;
         private int scaleCount;
+        private int scaleIndex;
+        private int recipeIndex;
         private boolean stop = false;
 
         public ScaleManager(Scale[] scales) {
             this.scales = scales;
             scaleCount = scales.length;
+            scaleIndex = 0;
+            recipeIndex = 0;
         }
 
         @Override
         public void run() {
+            final TextView recipeIDView = (TextView) findViewById(R.id.recipeID_text_view);
+            final TextView productIDView = (TextView) findViewById(R.id.productID_text_view);
+            final TextView productWeightView = (TextView) findViewById(R.id.product_weight_text_view);
+            final TextView scaleWeightView = (TextView) findViewById(R.id.scale_weight_text_view);
 
             while (!stop) {
                 try {
                     Thread.sleep(1000);
-                    Log.v("Client", String.valueOf(scales[scaleCount - 1].getScaleWeight()));
+                    final double scaleWeight = scales[scaleIndex].getScaleWeight().getWeight();
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (recipeGroup != null ) {
+                                if (recipeGroup.size() > 0) {
+                                    List<Recipe> recipeList = recipeGroup.get(0);
+                                    Recipe recipe = recipeList.get(recipeIndex);
+                                    double productWeight = recipe.getWeight();
+                                    recipeIDView.setText(recipe.getIngredientName());
+                                    productIDView.setText(recipe.getProductName());
+                                    productWeightView.setText(String.valueOf(productWeight) + " " + recipe.getWeightUnit());
+
+                                    if (Math.abs(productWeight - scaleWeight) < 0.1)
+                                        confirmButton.setEnabled(true);
+                                    else
+                                        confirmButton.setEnabled(false);
+                                } else {
+                                    recipeIDView.setText(R.string.no_data);
+                                    productIDView.setText(R.string.no_data);
+                                    productWeightView.setText(R.string.no_data);
+                                    confirmButton.setEnabled(false);
+                                }
+                            }
+                            scaleWeightView.setText(String.valueOf(scaleWeight) + " KG");
+                        }
+                    });
+
                 } catch (InterruptedException e) {
-                    Log.v("Query", e.toString());
+                    Log.e("Client", "ScaleManager " + e.toString());
                 }
             }
+
         }
 
-        public void setScaleCount(int val) {
-            scaleCount = val;
+        public void setScaleIndex(int val) {
+            scaleIndex = val;
+        }
+
+        public int getScaleIndex() {
+            return scaleIndex;
+        }
+
+        public void setRecipeIndex(int val) {
+            recipeIndex = val;
+        }
+
+        public int getRecipeIndex() {
+            return recipeIndex;
         }
 
         public int getScaleCount() {
@@ -234,6 +291,29 @@ public class MainActivity extends AppCompatActivity {
 
         public void terminate() {
             stop = true;
+        }
+    }
+
+    private class ButtonListener implements View.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            int scaleIndex = (scaleManager.getScaleIndex() + 1) % scaleManager.getScaleCount() ;
+            int recipeIndex = scaleManager.getRecipeIndex();
+            int recipeLength = recipeGroup.get(0).size();
+            scaleManager.setScaleIndex(scaleIndex);
+
+            if (recipeIndex == (recipeLength - 1)) {
+                recipeIndex = 0;
+                scaleManager.setRecipeIndex(recipeIndex);
+                recipeGroup.remove(0);
+                /*
+                    TODO:
+                        to notify server that task has been completed.
+                 */
+            } else {
+                recipeIndex = recipeIndex + 1;
+                scaleManager.setRecipeIndex(recipeIndex);
+            }
         }
     }
 
