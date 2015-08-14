@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>
-    <string name="app_name">Project_IceScream4.0.3</string>
+    <string name="app_name">配料看板</string>
 
     <string name="hello_world">hello world!</string>
     <string name="action_settings">Settings</string>
 
     <string name="progress_title">請稍後</string>
     <string name="progress_message">連線至伺服器中 ....</string>
+
+    <string name="progress_warning">警告</string>
+    <string name="restart_message">未偵測磅秤連線\n系統將於 5 秒後重啟 !!</string>
 </resources>

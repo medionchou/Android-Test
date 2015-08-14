@@ -29,28 +29,32 @@ public class Client implements Runnable {
     private SocketChannel socketChannel;
     private String cmd;
     private String serverReply;
-    private List< List<Mix> > mixGroup;
+    private List< List<Recipe> > recipeGroup;
+    private CharBuffer outStream;
+    private MainActivity mainActivity;
+    private int client_state;
 
     private boolean updateGUI;
     private boolean isTerminated;
 
 
 
-    public Client(Handler mHandler) {
+    public Client(Handler mHandler, MainActivity mainActivity) {
         this.mHandler = mHandler;
         updateGUI = false;
         isTerminated = false;
         cmd = "";
         serverReply = "";
         inputBuffer = ByteBuffer.allocate(1024);
-        mixGroup = new LinkedList<>();
+        recipeGroup = new LinkedList<>();
+        this.mainActivity = mainActivity;
+
     }
 
     @Override
     public void run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
         setUpConnection();
-
     }
 
     private void setUpConnection() {
@@ -74,6 +78,7 @@ public class Client implements Runnable {
                     }
 
                     updateGUI = true;
+                    client_state = ClientState.CONNECT_INITIALZING;
 
                 } else if (socketChannel != null) {
                     /*
@@ -87,37 +92,56 @@ public class Client implements Runnable {
                         updateGUI = false;
                     }
 
+
                     while (socketChannel.read(inputBuffer) > 0) {
+
                         inputBuffer.flip();
                         serverReply += Charset.defaultCharset().decode(inputBuffer);
                         inputBuffer.clear();
                         if (serverReply.contains("<END>")) {
-                            Log.v("Test",serverReply);
-                            if (serverReply.contains("MIX")) {
+                            Log.v("Client",serverReply);
+                            if (serverReply.contains("CONNECT_OK<END>")) {
+                                client_state = ClientState.CONNECT_OK;
+                            }
+                            if (serverReply.contains("RECIPE")) {
                                 groupMix(serverReply);
                             }
                             serverReply = "";
                         }
                     }
 
+                    switch(client_state) {
 
-                    if (cmd.length() > 0) {
-                        CharBuffer outStream = CharBuffer.wrap(cmd);
-                        while (outStream.hasRemaining()) {
-                            socketChannel.write(Charset.defaultCharset().encode(outStream));
-                        }
-                        cmd = "";
+                        case ClientState.CONNECT_INITIALZING:
+                            outStream = CharBuffer.wrap("CONNECT MS_M<END>");
+                            while (outStream.hasRemaining()) {
+                                socketChannel.write(Charset.defaultCharset().encode(outStream));
+                            }
+                            Thread.sleep(500);
+                            outStream.clear();
+                            break;
+                        case ClientState.CONNECT_OK:
+                            if (cmd.length() > 0) {
+                                Log.v("Client", "Sending");
+                                outStream = CharBuffer.wrap(cmd);
+                                while (outStream.hasRemaining()) {
+                                    socketChannel.write(Charset.defaultCharset().encode(outStream));
+                                }
+                                cmd = "";
+                                outStream.clear();
+                            }
+                            break;
                     }
 
                 }
             }
         } catch(UnknownHostException e) {
             /*Server not exist*/
-            Log.e("Client", "UnknownHostException 88");
+            Log.e("Client", "UnknownHostException 88"  + e.toString());
 
         } catch(IOException e ) {
             /*Socket error*/
-            Log.e("Client", "IOException 92");
+            Log.e("Client", "IOException 92" + e.toString());
 
         } catch(InterruptedException e) {
             /**/
@@ -141,18 +165,19 @@ public class Client implements Runnable {
         this.cmd = cmd;
     }
 
-    public List< List<Mix> > getMixGroup(){
-        return mixGroup;
+    public List< List<Recipe> > getRecipeGroup(){
+        return recipeGroup;
     }
 
-    public void setMixGroup(List< List<Mix>> mix) {
-        mixGroup = mix;
+    public void setRecipeGroup(List<List<Recipe>> mix) {
+        recipeGroup = mix;
     }
 
     public void terminate() {
         isTerminated = true;
         try {
-            socketChannel.close();
+            if (socketChannel != null)
+                socketChannel.close();
 
         } catch (IOException err) {
             Log.e("Client", "IOException 220 " +  err.toString());
@@ -163,19 +188,24 @@ public class Client implements Runnable {
     private void groupMix(String serverReply) {
 
         String[] ingredients = serverReply.split("\\t|<N>|<END>");
-        List<Mix> item = new LinkedList<>();
+        List<Recipe> item = new LinkedList<>();
 
-        for (int i = 0; i < ingredients.length; i=i+4) {
-            item.add(new Mix(ingredients[i+1], ingredients[i+2], Double.parseDouble(ingredients[i+3])));
+        for (int i = 0; i < ingredients.length; i=i+7) {
+            item.add(new Recipe(ingredients[i+1], ingredients[i+2], ingredients[i+3], ingredients[i+4], Double.parseDouble(ingredients[i+5]), ingredients[i+6]));
+
         }
-        mixGroup.add(item);
+        recipeGroup.add(item);
+        mainActivity.retainRecipe(recipeGroup);
+        /*
+             Used to display Recipe data content.
+         */
 
-        for (int i = 0; i < mixGroup.size(); i++) {
-            List<Mix> tmp = mixGroup.get(i);
+        /*for (int i = 0; i < recipeGroup.size(); i++) {
+            List<Recipe> tmp = recipeGroup.get(i);
             for (int j = 0; j < tmp.size(); j++) {
                 Log.v("Client", tmp.get(j).toString());
             }
-        }
+        }*/
     }
 
 }
