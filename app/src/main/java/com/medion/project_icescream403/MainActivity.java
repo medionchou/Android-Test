@@ -14,7 +14,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -33,8 +32,9 @@ public class MainActivity extends AppCompatActivity {
     private Client client;
     private List< List<Recipe> > recipeGroup;
     private Button confirmButton;
-
+    private Timer timer;
     private Scale[] scales;
+    private boolean isAnyUsbConnected = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +42,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         initObject();
 
-        if (scales.length > 0) {
+        for (int i = 0; i < scales.length; i++)
+            isAnyUsbConnected |= scales[i].isUsbConnected();
+
+
+        if (scales.length > 0 && isAnyUsbConnected) {
             clientThread.start();
             scaleThread.start();
         }
@@ -50,8 +54,7 @@ public class MainActivity extends AppCompatActivity {
             /** TODO:
              *      Perhaps need to deliver Recipe data to the intent restarted.
              **/
-
-            restartActivity();
+            restartActivity(States.USB_RESTART);
         }
     }
 
@@ -83,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         confirmButton = (Button) findViewById(R.id.confirm);
         confirmButton.setEnabled(false);
         confirmButton.setOnClickListener(new ButtonListener());
+        timer = new Timer();
     }
 
     private void deRefObject() {
@@ -92,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
         clientThread = null;
         scaleManager = null;
         scaleThread = null;
+        timer = null;
 
         for (int i = 0; i < scales.length; i++) {
             unregisterReceiver(scales[i].getBroadcastReceiver());
@@ -117,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
                 scaleThread.start();
             }
             else {
-                restartActivity();
+                restartActivity(States.USB_RESTART);
             }
         }
     }
@@ -133,9 +138,9 @@ public class MainActivity extends AppCompatActivity {
         scaleThread.interrupt();
         client.terminate();
         scaleManager.terminate();
+        timer.cancel();
         if (dialog.isShowing())
             dialog.dismiss();
-
         deRefObject();
     }
 
@@ -143,29 +148,41 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        recipeGroup = null;
+        //recipeGroup = null;
     }
 
     private void displayDialog(int state) {
         switch (state) {
-            case ClientState.CONNECTING:
+            case States.CONNECTING:
                 dialog.setTitle(getString(R.string.progress_title));
                 dialog.setMessage(getString(R.string.progress_message));
                 dialog.show();
                 dialog.setCancelable(false);
                 break;
-            case ClientState.CONNECTED:
+            case States.CONNECTED:
                 Log.v("Client", "Dismiss");
+                dialog.dismiss();
+                break;
+            case States.PDA_CONNECTING:
+                dialog.setTitle(getString(R.string.progress_title));
+                dialog.setMessage(getString(R.string.pda_connecting));
+                dialog.show();
+                dialog.setCancelable(false);
+                break;
+            case States.PDA_CONNECTED:
                 dialog.dismiss();
                 break;
         }
     }
 
-    private void restartActivity() {
-        Timer timer = new Timer();
-
-        dialog.setTitle(getString(R.string.progress_warning));
-        dialog.setMessage(getString(R.string.restart_message));
+    public void restartActivity(int type) {
+        if (type == States.USB_RESTART) {
+            dialog.setTitle(getString(R.string.progress_warning));
+            dialog.setMessage(getString(R.string.usb_restart_message));
+        } else if (type == States.SERVER_RESTART) {
+            dialog.setTitle(getString(R.string.progress_warning));
+            dialog.setMessage(getString(R.string.server_restart_message));
+        }
         dialog.show();
         timer.schedule(new TimerTask() {
             @Override
@@ -177,7 +194,9 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         }, 5000);
+
     }
+
 
     public void retainRecipe(List< List<Recipe> > recipeGroup) {
         this.recipeGroup = recipeGroup;
@@ -232,7 +251,11 @@ public class MainActivity extends AppCompatActivity {
 
             while (!stop) {
                 try {
+
+                    if (!scales[scaleIndex].isDataPrepared()) continue;
+
                     Thread.sleep(1000);
+
                     final double scaleWeight = scales[scaleIndex].getScaleWeight().getWeight();
 
                     runOnUiThread(new Runnable() {
@@ -240,6 +263,7 @@ public class MainActivity extends AppCompatActivity {
                         public void run() {
                             if (recipeGroup != null ) {
                                 if (recipeGroup.size() > 0) {
+
                                     List<Recipe> recipeList = recipeGroup.get(0);
                                     Recipe recipe = recipeList.get(recipeIndex);
                                     double productWeight = recipe.getWeight();
@@ -251,7 +275,9 @@ public class MainActivity extends AppCompatActivity {
                                         confirmButton.setEnabled(true);
                                     else
                                         confirmButton.setEnabled(false);
+
                                 } else {
+
                                     recipeIDView.setText(R.string.no_data);
                                     productIDView.setText(R.string.no_data);
                                     productWeightView.setText(R.string.no_data);

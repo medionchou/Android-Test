@@ -36,6 +36,7 @@ public class Scale {
     private final ScaleWeight scaleWeight = new ScaleWeight();
     private boolean stop = false;
     private boolean disconnect = false;
+    private boolean dataState = false;
 
     private BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         @Override
@@ -44,6 +45,7 @@ public class Scale {
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+
                     } else {
                     }
                 }
@@ -68,6 +70,9 @@ public class Scale {
         intf = this.usbDevice.getInterface(0);
         endpoint = intf.getEndpoint(2);
 
+        if (usbManager.hasPermission(this.usbDevice))
+            connection = usbManager.openDevice(this.usbDevice);
+
         retrieveScaleData.execute((Void) null);
     }
 
@@ -81,6 +86,14 @@ public class Scale {
 
     public BroadcastReceiver getBroadcastReceiver() {
         return mUsbReceiver;
+    }
+
+    public boolean isDataPrepared() {
+        return dataState;
+    }
+
+    public boolean isUsbConnected() {
+        return connection != null;
     }
 
     private void processProductWeight(String rawData) {
@@ -104,6 +117,7 @@ public class Scale {
             scaleWeight.setWeightValue(Double.valueOf(netWeightInfo[2]));
 
             //Log.v("Client_scale", String.valueOf(scaleWeight.getWeight()));
+            dataState = true;
         }
     }
 
@@ -132,8 +146,15 @@ public class Scale {
                 if (disconnect) {
                     return (Void)null;
                 }
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    Log.v("Scale", e.toString());
+                }
                 connection = usbManager.openDevice(usbDevice);
             }
+
+
             boolean isClaimed;
             isClaimed = connection.claimInterface(intf, true);
 

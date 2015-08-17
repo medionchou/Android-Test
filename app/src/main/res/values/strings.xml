@@ -10,7 +10,10 @@
     <string name="progress_message">連線至伺服器中 ....</string>
 
     <string name="progress_warning">警告</string>
-    <string name="restart_message">未偵測磅秤連線\n系統將於 5 秒後重啟 !!</string>
+    <string name="usb_restart_message">未偵測磅秤連線\n系統將於 5 秒後重啟 !!</string>
+    <string name="server_restart_message">與伺服器連線失敗\n系統將於 5 秒中後重新連線 !!</string>
+
+    <string name="pda_connecting">等候PDA連線中</string>
 
     <string name="no_data">尚無配料資料</string>
 </resources>

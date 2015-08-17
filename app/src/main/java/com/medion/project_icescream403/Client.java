@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class Client implements Runnable {
     private final String SERVER_IP = "140.113.167.14";
-    private final int SERVER_PORT = 9000;
+    private final int SERVER_PORT = 11000;
 
     private Handler mHandler;
     private ByteBuffer inputBuffer;
@@ -61,39 +61,43 @@ public class Client implements Runnable {
         try {
             while(!isTerminated) {
                 if (socketChannel == null) {
+
                     /*
                         Waiting for connection and retry to connect to server
                      */
                     Log.v("Client", "updateGUI connecting");
                     Message msg = mHandler.obtainMessage();
-                    msg.what = ClientState.CONNECTING;
+                    msg.what = States.CONNECTING;
                     mHandler.sendMessage(msg);
-                    Thread.sleep(1500);
+                    //Thread.sleep(3000);
                     socketChannel = SocketChannel.open();
                     socketChannel.configureBlocking(false);
                     socketChannel.connect(new InetSocketAddress(SERVER_IP, SERVER_PORT));
 
                     while (!socketChannel.finishConnect()) {
                         // Waiting for connection
+                        Thread.sleep(3000);
                     }
 
                     updateGUI = true;
-                    client_state = ClientState.CONNECT_INITIALZING;
+                    client_state = States.CONNECT_INITIALZING;
 
                 } else if (socketChannel != null) {
                     /*
                         Already connect to server
                      */
+
+
                     if (updateGUI) {
                         Log.v("Client", "updateGUI");
                         Message msg = mHandler.obtainMessage();
-                        msg.what = ClientState.CONNECTED;
+                        msg.what = States.CONNECTED;
                         mHandler.sendMessage(msg);
                         updateGUI = false;
                     }
 
-
-                    while (socketChannel.read(inputBuffer) > 0) {
+                    int num;
+                    while ((num = socketChannel.read(inputBuffer)) > 0) {
 
                         inputBuffer.flip();
                         serverReply += Charset.defaultCharset().decode(inputBuffer);
@@ -101,7 +105,7 @@ public class Client implements Runnable {
                         if (serverReply.contains("<END>")) {
                             Log.v("Client",serverReply);
                             if (serverReply.contains("CONNECT_OK<END>")) {
-                                client_state = ClientState.CONNECT_OK;
+                                client_state = States.CONNECT_OK;
                             }
                             if (serverReply.contains("RECIPE")) {
                                 groupMix(serverReply);
@@ -110,9 +114,11 @@ public class Client implements Runnable {
                         }
                     }
 
-                    switch(client_state) {
+                    if (num < 0)
+                        throw new IOException("Server disconnect");
 
-                        case ClientState.CONNECT_INITIALZING:
+                    switch(client_state) {
+                        case States.CONNECT_INITIALZING:
                             outStream = CharBuffer.wrap("CONNECT MS_M<END>");
                             while (outStream.hasRemaining()) {
                                 socketChannel.write(Charset.defaultCharset().encode(outStream));
@@ -120,7 +126,7 @@ public class Client implements Runnable {
                             Thread.sleep(500);
                             outStream.clear();
                             break;
-                        case ClientState.CONNECT_OK:
+                        case States.CONNECT_OK:
                             if (cmd.length() > 0) {
                                 Log.v("Client", "Sending");
                                 outStream = CharBuffer.wrap(cmd);
@@ -142,7 +148,16 @@ public class Client implements Runnable {
         } catch(IOException e ) {
             /*Socket error*/
             Log.e("Client", "IOException 92" + e.toString());
-
+            if (e.toString().equals("Server disconnect")) {
+                mainActivity.runOnUiThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                mainActivity.restartActivity(States.SERVER_RESTART);
+                            }
+                        }
+                );
+            }
         } catch(InterruptedException e) {
             /**/
             Log.e("Client", "Thread sleep exceptiong 105 " + e.toString());
@@ -196,16 +211,7 @@ public class Client implements Runnable {
         }
         recipeGroup.add(item);
         mainActivity.retainRecipe(recipeGroup);
-        /*
-             Used to display Recipe data content.
-         */
 
-        /*for (int i = 0; i < recipeGroup.size(); i++) {
-            List<Recipe> tmp = recipeGroup.get(i);
-            for (int j = 0; j < tmp.size(); j++) {
-                Log.v("Client", tmp.get(j).toString());
-            }
-        }*/
     }
 
 }
