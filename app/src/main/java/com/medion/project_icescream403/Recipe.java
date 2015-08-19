@@ -29,6 +29,10 @@ public class Recipe {
         return ingredientName;
     }
 
+    public String getProductID() {
+        return productID;
+    }
+
     public String getProductName() {
         return productName;
     }

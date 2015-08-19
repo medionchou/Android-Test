@@ -25,6 +25,7 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity {
 
     private ProgressDialog dialog;
+    private ProgressDialog pdaDialog;
     private HandlerExtension mHandler;
     private Thread clientThread;
     private Thread scaleThread;
@@ -78,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         Log.v("Client", "Connected USB: " + String.valueOf(scales.length));
 
         dialog = new ProgressDialog(this);
+        pdaDialog = new ProgressDialog(this);
         mHandler = new HandlerExtension(this);
         client = new Client(mHandler, this);
         clientThread = new Thread(client);
@@ -91,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void deRefObject() {
         dialog = null;
+        pdaDialog = null;
         mHandler = null;
         client = null;
         clientThread = null;
@@ -161,16 +164,19 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case States.CONNECTED:
                 Log.v("Client", "Dismiss");
-                dialog.dismiss();
+                if (dialog.isShowing())
+                    dialog.dismiss();
                 break;
             case States.PDA_CONNECTING:
                 dialog.setTitle(getString(R.string.progress_title));
                 dialog.setMessage(getString(R.string.pda_connecting));
                 dialog.show();
                 dialog.setCancelable(false);
+                Log.v("Client", "Waiting for PDA Connection");
                 break;
             case States.PDA_CONNECTED:
-                dialog.dismiss();
+                if (dialog.isShowing())
+                    dialog.dismiss();
                 break;
         }
     }
@@ -233,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
         private int scaleCount;
         private int scaleIndex;
         private int recipeIndex;
+        private int pdaState;
         private boolean stop = false;
 
         public ScaleManager(Scale[] scales) {
@@ -257,8 +264,81 @@ public class MainActivity extends AppCompatActivity {
                     Thread.sleep(1000);
 
                     final double scaleWeight = scales[scaleIndex].getScaleWeight().getWeight();
+                    final String ingredientName;
+                    final String productName;
+                    final String productWeightText;
+                    final boolean enabled;
+
+                    if (recipeGroup != null) {
+                        if (recipeGroup.size() > 0) {
+
+                            List<Recipe> recipeList = recipeGroup.get(0);
+                            Recipe recipe = recipeList.get(recipeIndex);
+                            double productWeight = recipe.getWeight();
+                            String productID = recipe.getProductID();
+                            String serialNum = client.getSerialNumber();
+
+                            ingredientName = recipe.getIngredientName();
+                            productName = recipe.getProductName();
+                            productWeightText = String.valueOf(productWeight) + " " + recipe.getWeightUnit();
+
+                            if (productID.equals(serialNum)) {
+                                pdaState = States.PDA_SCANNING_CORRECT;
+                                client.setSerialNumber("Unchecked");
+                                client.setCmd("QUERY_REPLY OK<END>");
+                                // send match correct
+                            } else if (!productID.equals(serialNum) && !serialNum.equals("Unchecked") ){
+                                pdaState = States.PDA_SCANNING;
+                                client.setSerialNumber("Unchecked");
+                                client.setCmd("QUERY_REPLY WRONG<END>");
+                                // send match incorrect
+                            }
+
+                            if (Math.abs(productWeight - scaleWeight) < 0.1)
+                                enabled = true;
+                            else
+                                enabled = false;
+
+                        } else {
+                            pdaState = States.PDA_NO_INPUT_DATA;
+                            ingredientName = getString(R.string.no_data);
+                            productName = getString(R.string.no_data);
+                            productWeightText = getString(R.string.no_data);
+                            enabled = false;
+                        }
+                    } else {
+                        pdaState = States.PDA_NO_INPUT_DATA;
+                        ingredientName = "";
+                        productName = "";
+                        productWeightText = "";
+                        enabled = false;
+                    }
 
                     runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            if (pdaState == States.PDA_SCANNING) {
+                                pdaDialog.setTitle(getString(R.string.pda_progress_status));
+                                pdaDialog.setMessage(productName);
+                                pdaDialog.show();
+                                pdaDialog.setCancelable(false);
+                                pdaState = States.PDA_IDLING;
+                                Log.v("Client", "Updating GGG");
+                            } else if (pdaState == States.PDA_SCANNING_CORRECT){
+                                if (pdaDialog.isShowing())
+                                    pdaDialog.dismiss();
+                            }
+
+                            recipeIDView.setText(ingredientName);
+                            productIDView.setText(productName);
+                            productWeightView.setText(productWeightText);
+                            scaleWeightView.setText(String.valueOf(scaleWeight) + " KG");
+                            confirmButton.setEnabled(enabled);
+                        }
+                    });
+
+                    /*runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             if (recipeGroup != null ) {
@@ -267,6 +347,8 @@ public class MainActivity extends AppCompatActivity {
                                     List<Recipe> recipeList = recipeGroup.get(0);
                                     Recipe recipe = recipeList.get(recipeIndex);
                                     double productWeight = recipe.getWeight();
+                                    String productID = recipe.getProductID();
+
                                     recipeIDView.setText(recipe.getIngredientName());
                                     productIDView.setText(recipe.getProductName());
                                     productWeightView.setText(String.valueOf(productWeight) + " " + recipe.getWeightUnit());
@@ -277,7 +359,6 @@ public class MainActivity extends AppCompatActivity {
                                         confirmButton.setEnabled(false);
 
                                 } else {
-
                                     recipeIDView.setText(R.string.no_data);
                                     productIDView.setText(R.string.no_data);
                                     productWeightView.setText(R.string.no_data);
@@ -286,13 +367,17 @@ public class MainActivity extends AppCompatActivity {
                             }
                             scaleWeightView.setText(String.valueOf(scaleWeight) + " KG");
                         }
-                    });
+                    });*/
 
                 } catch (InterruptedException e) {
                     Log.e("Client", "ScaleManager " + e.toString());
                 }
             }
 
+        }
+
+        public void setPdaState(int state) {
+            pdaState = state;
         }
 
         public void setScaleIndex(int val) {
@@ -332,6 +417,8 @@ public class MainActivity extends AppCompatActivity {
                 recipeIndex = 0;
                 scaleManager.setRecipeIndex(recipeIndex);
                 recipeGroup.remove(0);
+                client.setCmd("RECIPE_DONE<END>");
+
                 /*
                     TODO:
                         to notify server that task has been completed.
@@ -339,7 +426,9 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 recipeIndex = recipeIndex + 1;
                 scaleManager.setRecipeIndex(recipeIndex);
+                scaleManager.setPdaState(States.PDA_SCANNING);
             }
+
         }
     }
 

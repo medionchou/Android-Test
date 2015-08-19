@@ -17,5 +17,10 @@ public class States {
     public final static int PDA_CONNECTING = 0x0000006;
     public final static int PDA_CONNECTED = 0x0000007;
 
+    public final static int PDA_SCANNING = 0x00000008;
+    public final static int PDA_SCANNING_CORRECT = 0x00000009;
+    public final static int PDA_IDLING = 0x00000010;
+    public final static int PDA_NO_INPUT_DATA = 0x00000011;
+
 
 }

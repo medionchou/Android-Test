@@ -10,26 +10,6 @@
     tools:context=".MainActivity">
 
 
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="0.5"
-        android:orientation="vertical">
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="debug1"
-            android:text="Debug1" />
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="debug2"
-            android:text="Debug2" />
-
-    </LinearLayout>
-
     <RelativeLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
@@ -110,6 +90,14 @@
             android:id="@+id/scale_weight_text_view"
             android:text="重量"/>
 
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:textAppearanceMedium"
+            android:layout_alignParentRight="true"
+            android:layout_above="@+id/confirm"
+            android:text="下一筆"
+            android:id="@+id/nextBatch"/>
 
         <Button
             android:layout_width="wrap_content"

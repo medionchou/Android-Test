@@ -22,13 +22,14 @@ import java.util.List;
  */
 public class Client implements Runnable {
     private final String SERVER_IP = "140.113.167.14";
-    private final int SERVER_PORT = 11000;
+    private final int SERVER_PORT = 9000;
 
     private Handler mHandler;
     private ByteBuffer inputBuffer;
     private SocketChannel socketChannel;
     private String cmd;
-    private String serverReply;
+    private String serverReplayBuffer;
+    private String serialNum;
     private List< List<Recipe> > recipeGroup;
     private CharBuffer outStream;
     private MainActivity mainActivity;
@@ -44,7 +45,8 @@ public class Client implements Runnable {
         updateGUI = false;
         isTerminated = false;
         cmd = "";
-        serverReply = "";
+        serverReplayBuffer = "";
+        serialNum = "";
         inputBuffer = ByteBuffer.allocate(1024);
         recipeGroup = new LinkedList<>();
         this.mainActivity = mainActivity;
@@ -94,23 +96,45 @@ public class Client implements Runnable {
                         msg.what = States.CONNECTED;
                         mHandler.sendMessage(msg);
                         updateGUI = false;
+
+                        msg = mHandler.obtainMessage();
+                        msg.what = States.PDA_CONNECTING;
+                        mHandler.sendMessage(msg);
                     }
 
                     int num;
                     while ((num = socketChannel.read(inputBuffer)) > 0) {
 
                         inputBuffer.flip();
-                        serverReply += Charset.defaultCharset().decode(inputBuffer);
+                        serverReplayBuffer += Charset.defaultCharset().decode(inputBuffer);
                         inputBuffer.clear();
-                        if (serverReply.contains("<END>")) {
-                            Log.v("Client",serverReply);
-                            if (serverReply.contains("CONNECT_OK<END>")) {
+                        while(serverReplayBuffer.contains("<END>")) {
+                            int endIndex = serverReplayBuffer.indexOf("<END>") + 5;
+
+                            if (endIndex == -1)
+                                endIndex = 0;
+
+                            String endLine = serverReplayBuffer.substring(0, endIndex);
+
+                            Log.v("Client", endLine);
+
+                            if (endLine.contains("CONNECT_OK<END>")) {
                                 client_state = States.CONNECT_OK;
+                            } else if (endLine.contains("RECIPE") && !endLine.contains("RECIPE_DONE")) {
+                                groupMix(endLine);
+                            } else if (endLine.contains("PDA_ON<END>")) {
+                                Message msg = mHandler.obtainMessage();
+                                msg.what = States.PDA_CONNECTED;
+                                mHandler.sendMessage(msg);
+                            } else if (endLine.contains("PDA_OFF<END>")) {
+                                Message msg = mHandler.obtainMessage();
+                                msg.what = States.PDA_CONNECTING;
+                                mHandler.sendMessage(msg);
+                            } else if (endLine.contains("QUERY_SPICE")) {
+                                serialNum = endLine.split("\\t|<END>")[1];
+                                Log.v("Client", serialNum);
                             }
-                            if (serverReply.contains("RECIPE")) {
-                                groupMix(serverReply);
-                            }
-                            serverReply = "";
+                            serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
                         }
                     }
 
@@ -143,12 +167,13 @@ public class Client implements Runnable {
             }
         } catch(UnknownHostException e) {
             /*Server not exist*/
-            Log.e("Client", "UnknownHostException 88"  + e.toString());
+            Log.e("Client", "UnknownHostException 88 "  + e.toString());
 
         } catch(IOException e ) {
             /*Socket error*/
-            Log.e("Client", "IOException 92" + e.toString());
-            if (e.toString().equals("Server disconnect")) {
+            Log.e("Client", "IOException 92 " + e.toString());
+            if (e.toString().contains("Server disconnect") || e.toString().contains("SocketTimeoutException")) {
+                Log.v("Client", "Reconnect!!");
                 mainActivity.runOnUiThread(
                         new Runnable() {
                             @Override
@@ -176,6 +201,16 @@ public class Client implements Runnable {
     /*
         For debug typein
      */
+    public String getSerialNumber() {
+        if (serialNum != null)
+            return serialNum;
+        else
+            return "Unchecked";
+    }
+    public void setSerialNumber(String serialNum) {
+        this.serialNum = serialNum;
+    }
+
     public void setCmd(String cmd) {
         this.cmd = cmd;
     }

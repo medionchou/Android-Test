@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>
+
     <string name="app_name">配料看板</string>
 
     <string name="hello_world">hello world!</string>
@@ -14,6 +15,8 @@
     <string name="server_restart_message">與伺服器連線失敗\n系統將於 5 秒中後重新連線 !!</string>
 
     <string name="pda_connecting">等候PDA連線中</string>
+    <string name="pda_progress_status">等待PDA掃描</string>
 
     <string name="no_data">尚無配料資料</string>
+
 </resources>
