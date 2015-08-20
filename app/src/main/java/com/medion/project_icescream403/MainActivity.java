@@ -1,9 +1,11 @@
 package com.medion.project_icescream403;
 
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Handler;
@@ -14,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -33,9 +36,12 @@ public class MainActivity extends AppCompatActivity {
     private Client client;
     private List< List<Recipe> > recipeGroup;
     private Button confirmButton;
+    private Button nextButton;
     private Timer timer;
     private Scale[] scales;
+    private TextView scannedItemTextView;
     private boolean isAnyUsbConnected = false;
+    private int globalState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +79,9 @@ public class MainActivity extends AppCompatActivity {
 
         scales = new Scale[scaleList.size()];
         for (int i = 0; i < scaleList.size(); i++) {
+            // creating scales asyntask to receive scale data
             scales[i] = new Scale(scaleList.get(i), this);
+
         }
 
         Log.v("Client", "Connected USB: " + String.valueOf(scales.length));
@@ -87,7 +95,11 @@ public class MainActivity extends AppCompatActivity {
         scaleThread = new Thread(scaleManager);
         confirmButton = (Button) findViewById(R.id.confirm);
         confirmButton.setEnabled(false);
-        confirmButton.setOnClickListener(new ButtonListener());
+        confirmButton.setOnClickListener(new ConfirmButtonListener());
+        nextButton = (Button) findViewById(R.id.nextBatch);
+        nextButton.setEnabled(false);
+        nextButton.setOnClickListener(new NextButtonListener());
+        scannedItemTextView = (TextView) findViewById(R.id.scanned_item_text_view);
         timer = new Timer();
     }
 
@@ -100,6 +112,8 @@ public class MainActivity extends AppCompatActivity {
         scaleManager = null;
         scaleThread = null;
         timer = null;
+        confirmButton = null;
+        nextButton = null;
 
         for (int i = 0; i < scales.length; i++) {
             unregisterReceiver(scales[i].getBroadcastReceiver());
@@ -139,12 +153,14 @@ public class MainActivity extends AppCompatActivity {
         }
         clientThread.interrupt();
         scaleThread.interrupt();
-        client.terminate();
         scaleManager.terminate();
+        client.terminate();
+        dialog.cancel();
+        pdaDialog.cancel();
         timer.cancel();
-        if (dialog.isShowing())
-            dialog.dismiss();
+        scannedItemTextView.setText("歷史配料");
         deRefObject();
+
     }
 
 
@@ -157,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
     private void displayDialog(int state) {
         switch (state) {
             case States.CONNECTING:
+                globalState = States.CONNECTING;
                 dialog.setTitle(getString(R.string.progress_title));
                 dialog.setMessage(getString(R.string.progress_message));
                 dialog.show();
@@ -164,10 +181,12 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case States.CONNECTED:
                 Log.v("Client", "Dismiss");
+                globalState = States.CONNECTED;
                 if (dialog.isShowing())
                     dialog.dismiss();
                 break;
             case States.PDA_CONNECTING:
+                globalState = States.PDA_CONNECTING;
                 dialog.setTitle(getString(R.string.progress_title));
                 dialog.setMessage(getString(R.string.pda_connecting));
                 dialog.show();
@@ -175,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.v("Client", "Waiting for PDA Connection");
                 break;
             case States.PDA_CONNECTED:
+                globalState = States.PDA_CONNECTED;
                 if (dialog.isShowing())
                     dialog.dismiss();
                 break;
@@ -236,11 +256,11 @@ public class MainActivity extends AppCompatActivity {
     private class ScaleManager implements Runnable {
 
         private Scale[] scales;
-        private int scaleCount;
-        private int scaleIndex;
-        private int recipeIndex;
-        private int pdaState;
-        private boolean stop = false;
+        private int scaleCount; //how many scales are connected
+        private int scaleIndex; //index of scale
+        private int recipeIndex; // recipe entry in a recipe list
+        private int pdaState; // pda status
+        private boolean stop = false; // indicate terminatio
 
         public ScaleManager(Scale[] scales) {
             this.scales = scales;
@@ -258,16 +278,24 @@ public class MainActivity extends AppCompatActivity {
 
             while (!stop) {
                 try {
+                    if (stop) break;
 
                     if (!scales[scaleIndex].isDataPrepared()) continue;
+                    if (dialog.isShowing() || globalState != States.PDA_CONNECTED) {
+                        Thread.sleep(1000);
+                        continue;
+                    }
 
                     Thread.sleep(1000);
+                    if (client == null) break;
 
-                    final double scaleWeight = scales[scaleIndex].getScaleWeight().getWeight();
+                    String serialNum = client.getSerialNumber();
                     final String ingredientName;
                     final String productName;
                     final String productWeightText;
+                    final String productID;
                     final boolean enabled;
+                    final double scaleWeight = scales[scaleIndex].getScaleWeight().getWeight();
 
                     if (recipeGroup != null) {
                         if (recipeGroup.size() > 0) {
@@ -275,23 +303,30 @@ public class MainActivity extends AppCompatActivity {
                             List<Recipe> recipeList = recipeGroup.get(0);
                             Recipe recipe = recipeList.get(recipeIndex);
                             double productWeight = recipe.getWeight();
-                            String productID = recipe.getProductID();
-                            String serialNum = client.getSerialNumber();
 
                             ingredientName = recipe.getIngredientName();
                             productName = recipe.getProductName();
                             productWeightText = String.valueOf(productWeight) + " " + recipe.getWeightUnit();
+                            productID = recipe.getProductID();
+                            //serialNum = client.getSerialNumber();
 
-                            if (productID.equals(serialNum)) {
+                            if (serialNum.equals("")) {
+                                /*
+                                    While recipe empty, then receive a new recipe input. After that, invoke progressDialog to ask input
+                                 */
+                                pdaState = States.PDA_SCANNING;
+                                client.setSerialNumber("Unchecked");
+                            } else if (productID.equals(serialNum)) {
+                                /*
+                                    PDA query match the specified serial Number
+                                 */
                                 pdaState = States.PDA_SCANNING_CORRECT;
                                 client.setSerialNumber("Unchecked");
                                 client.setCmd("QUERY_REPLY OK<END>");
-                                // send match correct
-                            } else if (!productID.equals(serialNum) && !serialNum.equals("Unchecked") ){
+                            } else if (!productID.equals(serialNum) && !serialNum.equals("Unchecked")) {
                                 pdaState = States.PDA_SCANNING;
                                 client.setSerialNumber("Unchecked");
                                 client.setCmd("QUERY_REPLY WRONG<END>");
-                                // send match incorrect
                             }
 
                             if (Math.abs(productWeight - scaleWeight) < 0.1)
@@ -300,17 +335,29 @@ public class MainActivity extends AppCompatActivity {
                                 enabled = false;
 
                         } else {
+                            if (!serialNum.equals("")) {
+                                client.setCmd("QUERY_REPLY EMPTY<END>");
+                                client.setSerialNumber("");
+                            }
                             pdaState = States.PDA_NO_INPUT_DATA;
                             ingredientName = getString(R.string.no_data);
                             productName = getString(R.string.no_data);
                             productWeightText = getString(R.string.no_data);
+                            productID = getString(R.string.no_data);
                             enabled = false;
                         }
+
                     } else {
+                        if (!serialNum.equals("")) {
+                            client.setCmd("QUERY_REPLY EMPTY<END>");
+                            client.setSerialNumber("");
+                        }
+
                         pdaState = States.PDA_NO_INPUT_DATA;
-                        ingredientName = "";
-                        productName = "";
-                        productWeightText = "";
+                        ingredientName = getString(R.string.no_data);
+                        productName = getString(R.string.no_data);
+                        productWeightText = getString(R.string.no_data);
+                        productID = getString(R.string.no_data);
                         enabled = false;
                     }
 
@@ -320,7 +367,7 @@ public class MainActivity extends AppCompatActivity {
 
                             if (pdaState == States.PDA_SCANNING) {
                                 pdaDialog.setTitle(getString(R.string.pda_progress_status));
-                                pdaDialog.setMessage(productName);
+                                pdaDialog.setMessage(productID + " " + productName);
                                 pdaDialog.show();
                                 pdaDialog.setCancelable(false);
                                 pdaState = States.PDA_IDLING;
@@ -334,40 +381,15 @@ public class MainActivity extends AppCompatActivity {
                             productIDView.setText(productName);
                             productWeightView.setText(productWeightText);
                             scaleWeightView.setText(String.valueOf(scaleWeight) + " KG");
+                            if (enabled)
+                                scaleWeightView.setTextColor(Color.GREEN);
+                            else
+                                scaleWeightView.setTextColor(Color.RED);
+
                             confirmButton.setEnabled(enabled);
                         }
                     });
 
-                    /*runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (recipeGroup != null ) {
-                                if (recipeGroup.size() > 0) {
-
-                                    List<Recipe> recipeList = recipeGroup.get(0);
-                                    Recipe recipe = recipeList.get(recipeIndex);
-                                    double productWeight = recipe.getWeight();
-                                    String productID = recipe.getProductID();
-
-                                    recipeIDView.setText(recipe.getIngredientName());
-                                    productIDView.setText(recipe.getProductName());
-                                    productWeightView.setText(String.valueOf(productWeight) + " " + recipe.getWeightUnit());
-
-                                    if (Math.abs(productWeight - scaleWeight) < 0.1)
-                                        confirmButton.setEnabled(true);
-                                    else
-                                        confirmButton.setEnabled(false);
-
-                                } else {
-                                    recipeIDView.setText(R.string.no_data);
-                                    productIDView.setText(R.string.no_data);
-                                    productWeightView.setText(R.string.no_data);
-                                    confirmButton.setEnabled(false);
-                                }
-                            }
-                            scaleWeightView.setText(String.valueOf(scaleWeight) + " KG");
-                        }
-                    });*/
 
                 } catch (InterruptedException e) {
                     Log.e("Client", "ScaleManager " + e.toString());
@@ -405,42 +427,65 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private class ButtonListener implements View.OnClickListener {
+    private class ConfirmButtonListener implements View.OnClickListener {
+        private int count = 1;
         @Override
         public void onClick(View v) {
             int scaleIndex = (scaleManager.getScaleIndex() + 1) % scaleManager.getScaleCount() ;
             int recipeIndex = scaleManager.getRecipeIndex();
             int recipeLength = recipeGroup.get(0).size();
+
             scaleManager.setScaleIndex(scaleIndex);
+
 
             if (recipeIndex == (recipeLength - 1)) {
                 recipeIndex = 0;
                 scaleManager.setRecipeIndex(recipeIndex);
                 recipeGroup.remove(0);
                 client.setCmd("RECIPE_DONE<END>");
+                scannedItemTextView.setText("歷史配料");
 
-                /*
-                    TODO:
-                        to notify server that task has been completed.
-                 */
+                if (recipeGroup.size() > 0) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    AlertDialog alertDialog;
+
+                    builder.setTitle(R.string.alert_dialog_title)
+                           .setMessage(R.string.alert_dialog_message);
+                    alertDialog = builder.create();
+                    alertDialog.show();
+                    nextButton.setEnabled(true);
+                } else {
+                    // set serialNumber to empty in order to reset the state to original.
+                    client.setSerialNumber("");
+                }
+
             } else {
+                TextView scaleWeightView = (TextView) findViewById(R.id.scale_weight_text_view);
+                String tmp = scannedItemTextView.getText().toString();
+                List<Recipe> recipeList = recipeGroup.get(0);
+                Recipe recipe = recipeList.get(recipeIndex);
+
+                if (tmp.length() > 0)
+                    tmp += "\n";
+                tmp += "第" + String.valueOf(count) + "筆:\n" + "\t物料名稱: " + recipe.getProductName() + "\n\t秤得重量: " + scaleWeightView.getText().toString();
+                scannedItemTextView.setText(tmp);
                 recipeIndex = recipeIndex + 1;
                 scaleManager.setRecipeIndex(recipeIndex);
                 scaleManager.setPdaState(States.PDA_SCANNING);
+                confirmButton.setEnabled(false);
+
+                count++;
             }
 
         }
     }
 
+    private class NextButtonListener implements View.OnClickListener {
 
-    public void debug1(View view) {
-
-        client.setCmd("DEBUG_RECIPE 1<END>");
+        @Override
+        public void onClick(View v) {
+            scaleManager.setPdaState(States.PDA_SCANNING);
+            nextButton.setEnabled(false);
+        }
     }
-
-    public void debug2(View view) {
-
-        client.setCmd("DEBUG_RECIPE 2<END>");
-    }
-
 }

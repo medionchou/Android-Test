@@ -17,6 +17,9 @@
     <string name="pda_connecting">等候PDA連線中</string>
     <string name="pda_progress_status">等待PDA掃描</string>
 
+    <string name="alert_dialog_title">提示</string>
+    <string name="alert_dialog_message">尚有剩餘配料清單\n請點選\'下一筆配料\'繼續</string>
+
     <string name="no_data">尚無配料資料</string>
 
 </resources>

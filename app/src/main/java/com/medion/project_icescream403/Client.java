@@ -89,7 +89,7 @@ public class Client implements Runnable {
                         Already connect to server
                      */
 
-
+                    // update ProgressDialog. Dismiss connecting dialog and show PDA connecting.
                     if (updateGUI) {
                         Log.v("Client", "updateGUI");
                         Message msg = mHandler.obtainMessage();
@@ -102,6 +102,7 @@ public class Client implements Runnable {
                         mHandler.sendMessage(msg);
                     }
 
+                    // socket read if server sends data.
                     int num;
                     while ((num = socketChannel.read(inputBuffer)) > 0) {
 
@@ -132,7 +133,7 @@ public class Client implements Runnable {
                                 mHandler.sendMessage(msg);
                             } else if (endLine.contains("QUERY_SPICE")) {
                                 serialNum = endLine.split("\\t|<END>")[1];
-                                Log.v("Client", serialNum);
+                                Log.v("Client", serialNum + " " + "Test");
                             }
                             serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
                         }
@@ -141,6 +142,7 @@ public class Client implements Runnable {
                     if (num < 0)
                         throw new IOException("Server disconnect");
 
+                    // socket write if string cmd not empty
                     switch(client_state) {
                         case States.CONNECT_INITIALZING:
                             outStream = CharBuffer.wrap("CONNECT MS_M<END>");
@@ -172,6 +174,8 @@ public class Client implements Runnable {
         } catch(IOException e ) {
             /*Socket error*/
             Log.e("Client", "IOException 92 " + e.toString());
+
+            // restart activity if connection fails.
             if (e.toString().contains("Server disconnect") || e.toString().contains("SocketTimeoutException")) {
                 Log.v("Client", "Reconnect!!");
                 mainActivity.runOnUiThread(
@@ -202,10 +206,8 @@ public class Client implements Runnable {
         For debug typein
      */
     public String getSerialNumber() {
-        if (serialNum != null)
-            return serialNum;
-        else
-            return "Unchecked";
+        // serialNum empty means receive new input from empty state.
+        return serialNum;
     }
     public void setSerialNumber(String serialNum) {
         this.serialNum = serialNum;

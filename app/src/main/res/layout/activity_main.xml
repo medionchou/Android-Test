@@ -17,96 +17,153 @@
         android:orientation="vertical">
 
         <TextView
-            android:layout_width="match_parent"
+            android:id="@+id/scale_text_view"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:gravity="center_horizontal"
-            android:textAppearance="?android:textAppearanceLarge"
-            android:id="@+id/scale_text_view"
-            android:text="磅秤"/>
+            android:layout_centerHorizontal="true"
+            android:text="磅秤"
+            android:textColor="@android:color/black"
+            android:textSize="40sp" />
 
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_below="@+id/scale_text_view"
-            android:textAppearance="?android:textAppearanceLarge"
             android:id="@+id/recipe_text_view"
-            android:text="配方名稱"/>
-
-        <!-- editable -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_below="@+id/recipe_text_view"
-            android:textAppearance="?android:textAppearanceLarge"
-            android:id="@+id/recipeID_text_view"
-            android:text="配方ID"/>
-
-        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@+id/scale_text_view"
             android:layout_marginTop="20dp"
-            android:layout_alignParentRight="true"
-            android:textAppearance="?android:textAppearanceLarge"
+            android:text="配方名稱: "
+            android:textColor="@android:color/black"
+            android:textSize="30sp" />
+
+        <!-- editable -->
+        <TextView
+            android:id="@+id/recipeID_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/scale_text_view"
+            android:layout_marginTop="20dp"
+            android:layout_toRightOf="@+id/recipe_text_view"
+            android:text="配方ID"
+            android:textColor="@android:color/black"
+            android:textSize="30sp" />
+
+        <ScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:background="@android:color/darker_gray"
+            android:layout_below="@+id/recipe_text_view">
+
+            <TextView
+                android:id="@+id/scanned_item_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="歷史配料"
+                android:textColor="@android:color/black"
+                android:textSize="30sp" />
+        </ScrollView>
+
+        <TextView
             android:id="@+id/product_text_view"
-            android:text="物料名稱"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/scale_text_view"
+            android:layout_toLeftOf="@+id/scale_text_view"
+            android:layout_marginTop="200dp"
+            android:text="目前物料 :"
+            android:textColor="@android:color/black"
+            android:textSize="30sp" />
 
 
         <!-- editable -->
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_below="@+id/product_text_view"
-            android:layout_alignParentRight="true"
-            android:textAppearance="?android:textAppearanceLarge"
             android:id="@+id/productID_text_view"
-            android:text="產品ID"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/scale_text_view"
+            android:layout_toRightOf="@+id/product_text_view"
+            android:layout_marginTop="200dp"
+            android:layout_marginLeft="25dp"
+            android:text="產品ID"
+            android:textColor="@android:color/black"
+            android:textSize="30sp" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/product_text_view"
+            android:layout_marginTop="50dp"
+            android:layout_toLeftOf="@+id/scale_text_view"
+            android:text="物料重量 :"
+            android:textColor="@android:color/black"
+            android:textSize="30sp"
+            android:id="@+id/product_weight_label_text_view"/>
 
 
         <!-- editable -->
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_above="@+id/scale_weight_text_view"
-            android:layout_centerHorizontal="true"
-            android:textAppearance="?android:textAppearanceLarge"
             android:id="@+id/product_weight_text_view"
-            android:text="產品物重"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/product_text_view"
+            android:layout_toRightOf="@+id/product_weight_label_text_view"
+            android:layout_marginTop="50dp"
+            android:layout_marginLeft="25dp"
+            android:gravity="start"
+            android:text="產品重量"
+            android:textColor="@android:color/black"
+            android:textSize="30sp" />
 
 
         <!-- editable -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
-            android:textAppearance="?android:textAppearanceLarge"
+            android:layout_toLeftOf="@+id/scale_text_view"
+            android:layout_below="@+id/product_weight_label_text_view"
+            android:layout_marginTop="50dp"
+            android:textColor="@android:color/black"
+            android:textSize="30sp"
+            android:text="當前物重 :"
+            android:id="@+id/current_weight_text_view"/>
+
+        <TextView
             android:id="@+id/scale_weight_text_view"
-            android:text="重量"/>
-
-        <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:textAppearanceMedium"
-            android:layout_alignParentRight="true"
-            android:layout_above="@+id/confirm"
-            android:text="下一筆"
-            android:id="@+id/nextBatch"/>
+            android:layout_below="@+id/product_weight_label_text_view"
+            android:layout_toRightOf="@+id/current_weight_text_view"
+            android:layout_marginTop="50dp"
+            android:layout_marginLeft="25dp"
+            android:gravity="start"
+            android:text="磅秤未連接"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="30sp" />
 
         <Button
+            android:id="@+id/nextBatch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:textAppearanceMedium"
+            android:layout_below="@+id/current_weight_text_view"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="50dp"
+            android:text="下一筆配料"
+            android:textColor="@android:color/black"
+            android:textSize="50sp" />
+
+        <Button
+            android:id="@+id/confirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
+            android:layout_marginBottom="50dp"
+            android:layout_marginRight="50dp"
             android:text="確認"
-            android:id="@+id/confirm" />
+            android:textColor="@android:color/black"
+            android:textSize="50sp" />
 
 
     </RelativeLayout>
