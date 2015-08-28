@@ -145,7 +145,7 @@ public class Client implements Runnable {
                     // socket write if string cmd not empty
                     switch(client_state) {
                         case States.CONNECT_INITIALZING:
-                            outStream = CharBuffer.wrap("CONNECT MS_M<END>");
+                            outStream = CharBuffer.wrap("CONNECT\tMS_M<END>");
                             while (outStream.hasRemaining()) {
                                 socketChannel.write(Charset.defaultCharset().encode(outStream));
                             }
@@ -206,7 +206,11 @@ public class Client implements Runnable {
         For debug typein
      */
     public String getSerialNumber() {
-        // serialNum empty means receive new input from empty state.
+        /*
+            In empty state, serialNum empty means receive new input.
+            In nonempty state, serialNum empty means invoke progressDialog to request worker to
+            scan barcode.
+         */
         return serialNum;
     }
     public void setSerialNumber(String serialNum) {

@@ -18,7 +18,7 @@ import android.util.Log;
  * Created by Medion on 2015/8/12.
  */
 public class Scale {
-    private static final String ACTION_USB_PERMISSION = "USB_PERMISSION";
+    private String ACTION_USB_PERMISSION = "USB_PERMISSION";
 
     /*rs-232 transferring setting */
     byte[] mPortSetting = new byte[7];
@@ -42,6 +42,7 @@ public class Scale {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
@@ -54,11 +55,17 @@ public class Scale {
         }
     };
 
-    public Scale(UsbDevice usbDevice, final MainActivity activity) {
+    public Scale(UsbDevice usbDevice, final MainActivity activity, String permission, boolean isStop) {
 
         setControlMsg();
         this.usbDevice = usbDevice;
         retrieveScaleData = new RetrieveScaleData();
+        stop = isStop;
+        ACTION_USB_PERMISSION += "_" + permission;
+
+
+        Log.v("Client", ACTION_USB_PERMISSION + " " + this.usbDevice.toString());
+
 
         /*send msg to broadcastReceiver*/
         PendingIntent pendingIntent = PendingIntent.getBroadcast(activity, 0, new Intent(ACTION_USB_PERMISSION), 0);
@@ -70,10 +77,14 @@ public class Scale {
         intf = this.usbDevice.getInterface(0);
         endpoint = intf.getEndpoint(2);
 
-        if (usbManager.hasPermission(this.usbDevice))
+        if (usbManager.hasPermission(this.usbDevice)) {
             connection = usbManager.openDevice(this.usbDevice);
+        }
 
         retrieveScaleData.execute((Void) null);
+
+        scaleWeight.setPositive(false);
+        scaleWeight.setWeightValue(Double.MIN_VALUE);
     }
 
     public void stopDataRetrieval(boolean stop) {
@@ -116,7 +127,7 @@ public class Scale {
             }
             scaleWeight.setWeightValue(Double.valueOf(netWeightInfo[2]));
 
-            //Log.v("Client_scale", String.valueOf(scaleWeight.getWeight()));
+            Log.v("Client_scale", ACTION_USB_PERMISSION + " " + String.valueOf(scaleWeight.getWeight()));
             dataState = true;
         }
     }
@@ -143,6 +154,8 @@ public class Scale {
         protected Void doInBackground(Void... params) {
 
             while (connection == null) {
+                Log.v("Client", "No connection " + ACTION_USB_PERMISSION);
+
                 if (disconnect) {
                     return (Void)null;
                 }
@@ -154,13 +167,19 @@ public class Scale {
                 connection = usbManager.openDevice(usbDevice);
             }
 
+            //if (stop) return (Void)null;
 
             boolean isClaimed;
             isClaimed = connection.claimInterface(intf, true);
 
+            Log.v("Client", ACTION_USB_PERMISSION +" "+isClaimed);
+
             if (isClaimed) {
                 int resOfControl;
+
                 resOfControl = connection.controlTransfer(PROLIFIC_CTRL_OUT_REQTYPE, SET_LINE_REQUEST, 0, 0, mPortSetting, mPortSetting.length, 5000);
+
+                Log.v("Client", String.valueOf(resOfControl));
 
                 if (resOfControl > 0) {
 
@@ -172,7 +191,9 @@ public class Scale {
                         int val;
                         val = connection.bulkTransfer(endpoint, bytes, bytes.length, 500);
 
+
                         if (val > 0) {
+
                             for (int i = 0; i < val; i++) {
                                 if (bytes[i] < 0) {
                                     bytes[i] += 128;
