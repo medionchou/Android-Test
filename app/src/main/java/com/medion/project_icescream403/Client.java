@@ -134,6 +134,22 @@ public class Client implements Runnable {
                             } else if (endLine.contains("QUERY_SPICE")) {
                                 serialNum = endLine.split("\\t|<END>")[1];
                                 Log.v("Client", serialNum + " " + "Test");
+                            } else if (endLine.contains("MSG")) {
+                                String tmp;
+                                tmp = endLine.replace("<END>", "");
+                                tmp = tmp.replace("MSG\t", "");
+
+                                final String marquee = tmp;
+
+
+                                mainActivity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mainActivity.setMsgTextView(marquee);
+                                    }
+                                });
+
+                                Log.v("Client", tmp);
                             }
                             serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
                         }

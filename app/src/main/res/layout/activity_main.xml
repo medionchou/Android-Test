@@ -16,15 +16,31 @@
         android:layout_weight="2"
         android:orientation="vertical">
 
+
+        <TextView
+            android:id="@+id/marquee_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentTop="true"
+            android:singleLine="true"
+            android:textSize="40sp"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:ellipsize="marquee"
+            android:scrollHorizontally="true"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:textColor="#00FF00"
+            android:background="#8B1A1A"
+            android:text="磅秤"/>
+
+        <!--Helper Text view to position other view component-->
         <TextView
             android:id="@+id/scale_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_centerHorizontal="true"
-            android:text="磅秤"
-            android:textColor="@android:color/black"
-            android:textSize="40sp" />
+            android:layout_below="@+id/marquee_text_view"
+            android:layout_centerHorizontal="true"/>
 
 
         <TextView

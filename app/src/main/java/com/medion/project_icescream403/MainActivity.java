@@ -18,6 +18,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 
+import org.w3c.dom.Text;
+
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private Timer timer;
     private Scale[] scales;
     private TextView scannedItemTextView;
+    private TextView runningTextView;
     private List<UsbDevice> scaleList;
 
     private boolean isAnyUsbConnected; ///
@@ -56,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < scales.length; i++)
             isAnyUsbConnected |= scales[i].isUsbConnected();
+
 
 
         if (scales.length > 0 && isAnyUsbConnected) {
@@ -117,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
         nextButton.setEnabled(false);
         nextButton.setOnClickListener(new NextButtonListener());
         scannedItemTextView = (TextView) findViewById(R.id.scanned_item_text_view);
+        runningTextView = (TextView) findViewById(R.id.marquee_text_view);
         timer = new Timer();
         isAnyUsbConnected = false;
     }
@@ -225,6 +230,10 @@ public class MainActivity extends AppCompatActivity {
         } catch(IllegalArgumentException e) {
             Log.e("Client", "IllegalArgumentException: " + e.toString());
         }
+    }
+
+    public void setMsgTextView(String msg) {
+        runningTextView.setText(msg);
     }
 
     public void restartActivity(int type) {
@@ -471,8 +480,8 @@ public class MainActivity extends AppCompatActivity {
             int scaleIndex = scaleManager.getScaleIndex();
             int oldIndex = scaleIndex;
             int newIndex;
-            /*int recipeIndex = scaleManager.getRecipeIndex();
-            int recipeLength = recipeGroup.get(0).size();*/
+            int recipeIndex = scaleManager.getRecipeIndex();
+            int recipeLength = recipeGroup.get(0).size();
 
 
             scaleIndex = (scaleIndex + 1) % scaleManager.getScaleCount();
@@ -485,7 +494,7 @@ public class MainActivity extends AppCompatActivity {
             scaleManager.setScaleIndex(scaleIndex);
 
 
-            /*if (recipeIndex == (recipeLength - 1)) {
+            if (recipeIndex == (recipeLength - 1)) {
                 recipeIndex = 0;
                 scaleManager.setRecipeIndex(recipeIndex);
                 recipeGroup.remove(0);
@@ -502,7 +511,7 @@ public class MainActivity extends AppCompatActivity {
                     alertDialog.show();
                     nextButton.setEnabled(true);
                 } else {
-                     set serialNumber to empty in order to reset the state to original.
+                    // set serialNumber to empty in order to reset the state to original.
                     client.setSerialNumber("");
                 }
 
@@ -521,7 +530,7 @@ public class MainActivity extends AppCompatActivity {
                 scaleManager.setPdaState(States.PDA_SCANNING);
                 confirmButton.setEnabled(false);
                 count++;
-            }*/
+            }
         }
     }
 

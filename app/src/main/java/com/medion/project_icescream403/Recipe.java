@@ -12,6 +12,8 @@ public class Recipe {
     private double weight;
     private String weightUnit;
 
+
+
     public Recipe(String ingredientID, String ingredientName, String productID, String productName, double weight, String weightUnit) {
         this.ingredientID = ingredientID;
         this.ingredientName = ingredientName;
