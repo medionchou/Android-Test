@@ -27,6 +27,10 @@ public class Recipe {
         return ingredientID + " " + ingredientName + " " + productID + " " + productName + " " + weight + " " + weightUnit;
     }
 
+    public String getIngredientID() {
+        return ingredientID;
+    }
+
     public String getIngredientName() {
         return ingredientName;
     }

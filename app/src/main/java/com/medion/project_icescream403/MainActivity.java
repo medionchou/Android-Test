@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Bundle;
@@ -16,6 +17,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 import org.w3c.dom.Text;
@@ -31,6 +33,7 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private final int VENDOR_ID = 1659;
+    private int play_times = 1;
 
     private ProgressDialog dialog;
     private ProgressDialog pdaDialog;
@@ -45,11 +48,16 @@ public class MainActivity extends AppCompatActivity {
     private Timer timer;
     private Scale[] scales;
     private TextView scannedItemTextView;
-    private TextView runningTextView;
+    private ScrollForeverTextView runningTextView;
     private List<UsbDevice> scaleList;
+    private MediaPlayer alarmAudio;
 
     private boolean isAnyUsbConnected; ///
     private int globalState;
+
+    public void Test(View view) {
+        Toast.makeText(this, "SSSSSSS", Toast.LENGTH_SHORT).show();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,7 +68,8 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < scales.length; i++)
             isAnyUsbConnected |= scales[i].isUsbConnected();
 
-
+        //clientThread.start();
+        //scaleThread.start();
 
         if (scales.length > 0 && isAnyUsbConnected) {
             clientThread.start();
@@ -121,7 +130,8 @@ public class MainActivity extends AppCompatActivity {
         nextButton.setEnabled(false);
         nextButton.setOnClickListener(new NextButtonListener());
         scannedItemTextView = (TextView) findViewById(R.id.scanned_item_text_view);
-        runningTextView = (TextView) findViewById(R.id.marquee_text_view);
+        runningTextView = (ScrollForeverTextView) findViewById(R.id.marquee_text_view);
+        alarmAudio = MediaPlayer.create(this, R.raw.alarm);
         timer = new Timer();
         isAnyUsbConnected = false;
     }
@@ -218,6 +228,7 @@ public class MainActivity extends AppCompatActivity {
                 globalState = States.PDA_CONNECTED;
                 if (dialog.isShowing())
                     dialog.dismiss();
+                Log.v("Client", "Connecting");
                 break;
         }
     }
@@ -244,6 +255,7 @@ public class MainActivity extends AppCompatActivity {
             dialog.setTitle(getString(R.string.progress_warning));
             dialog.setMessage(getString(R.string.server_restart_message));
         }
+        dialog.setCancelable(false);
         dialog.show();
         timer.schedule(new TimerTask() {
             @Override
@@ -416,10 +428,15 @@ public class MainActivity extends AppCompatActivity {
                                 pdaDialog.show();
                                 pdaDialog.setCancelable(false);
                                 pdaState = States.PDA_IDLING;
-                                Log.v("Client", "Updating GGG");
+                                Log.v("Client", "Waiting PDA Scanning");
                             } else if (pdaState == States.PDA_SCANNING_CORRECT) {
                                 if (pdaDialog.isShowing())
                                     pdaDialog.dismiss();
+                            }
+
+                            if ((Double.valueOf(scaleWeight) / Double.valueOf(productWeightText)) >= 0.9 && play_times == 1) {
+                                alarmAudio.start();
+                                play_times = 0;
                             }
 
                             recipeIDView.setText(ingredientName);
@@ -440,7 +457,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("Client", "ScaleManager " + e.toString());
                 }
             }
-
         }
 
         public void setPdaState(int state) {
@@ -473,6 +489,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class ConfirmButtonListener implements View.OnClickListener {
+
         private int count = 1;
 
         @Override
@@ -484,9 +501,16 @@ public class MainActivity extends AppCompatActivity {
             int recipeLength = recipeGroup.get(0).size();
 
 
+            play_times = 1;
+
             scaleIndex = (scaleIndex + 1) % scaleManager.getScaleCount();
             newIndex = scaleIndex;
             Log.v("Client", String.valueOf(scaleIndex));
+
+            if (recipeIndex == (recipeLength - 1)) {
+                scaleIndex = 0;
+            }
+
             if (newIndex != oldIndex) {
                 stopScale(oldIndex);
                 scales[scaleIndex] = new Scale(scaleList.get(scaleIndex), MainActivity.this, String.valueOf(scaleIndex), false);
@@ -495,10 +519,12 @@ public class MainActivity extends AppCompatActivity {
 
 
             if (recipeIndex == (recipeLength - 1)) {
+                String ingredientID = recipeGroup.get(0).get(0).getIngredientID();
+
                 recipeIndex = 0;
                 scaleManager.setRecipeIndex(recipeIndex);
                 recipeGroup.remove(0);
-                client.setCmd("RECIPE_DONE<END>");
+                client.setCmd("RECIPE_DONE\t" + ingredientID + "<END>");
                 scannedItemTextView.setText("歷史配料");
 
                 if (recipeGroup.size() > 0) {
@@ -539,6 +565,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onClick(View v) {
             scaleManager.setPdaState(States.PDA_SCANNING);
+            scaleManager.setScaleIndex(0);
             nextButton.setEnabled(false);
         }
     }
