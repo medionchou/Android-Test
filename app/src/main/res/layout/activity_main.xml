@@ -5,7 +5,7 @@
     tools:context=".MainActivity">
 
 
-    <com.medion.project_icescream403.ScrollForeverTextView
+    <com.medion.project_icescream403.MarqueeTextView
         android:id="@+id/marquee_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -13,31 +13,11 @@
         android:layout_alignParentTop="true"
         android:singleLine="true"
         android:textSize="40sp"
-        android:marqueeRepeatLimit="marquee_forever"
-        android:ellipsize="marquee"
         android:scrollHorizontally="true"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
         android:textColor="#00FF00"
         android:background="#8B1A1A"
-        android:layout_span="3"
-        android:lines="1"
         android:text="磅秤" />
 
-    <!--TextView
-        android:id="@+id/marquee_text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="#8B1A1A"
-        android:ellipsize="marquee"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:marqueeRepeatLimit="marquee_forever"
-        android:scrollHorizontally="true"
-        android:singleLine="true"
-        android:text=""
-        android:textColor="#00FF00"
-        android:textSize="50sp" -->
 
     <!--Helper Text view to position other view component-->
     <TextView

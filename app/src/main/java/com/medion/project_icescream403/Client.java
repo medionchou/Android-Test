@@ -13,6 +13,9 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,6 +33,8 @@ public class Client implements Runnable {
     private String cmd;
     private String serverReplayBuffer;
     private String serialNum;
+    private String msg;
+    private String oldMsg;
     private List< List<Recipe> > recipeGroup;
     private CharBuffer outStream;
     private MainActivity mainActivity;
@@ -47,6 +52,8 @@ public class Client implements Runnable {
         cmd = "";
         serverReplayBuffer = "";
         serialNum = "";
+        msg = "";
+        oldMsg = "";
         inputBuffer = ByteBuffer.allocate(1024);
         recipeGroup = new LinkedList<>();
         this.mainActivity = mainActivity;
@@ -138,18 +145,7 @@ public class Client implements Runnable {
                                 String tmp;
                                 tmp = endLine.replace("<END>", "");
                                 tmp = tmp.replace("MSG\t", "");
-
-                                final String marquee = tmp;
-
-
-                                mainActivity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        mainActivity.setMsgTextView(marquee);
-                                    }
-                                });
-
-                                Log.v("Client", tmp);
+                                msg = tmp;
                             }
                             serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
                         }
@@ -181,6 +177,28 @@ public class Client implements Runnable {
                             break;
                     }
 
+
+                    if (msg.length() > 0 && !oldMsg.equals(msg)) {
+                        mainActivity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mainActivity.setRunningTextView(msg);
+                            }
+                        });
+
+                    } else if (msg.length() > 0) {
+                        mainActivity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Calendar cal = Calendar.getInstance();
+                                DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                                String date = dateFormat.format(cal.getTime());
+                                mainActivity.setNewRunningTextView(msg + date);
+                            }
+                        });
+                    }
+                    oldMsg = msg;
+                    Thread.sleep(1000);
                 }
             }
         } catch(UnknownHostException e) {

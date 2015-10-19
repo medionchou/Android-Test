@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private Timer timer;
     private Scale[] scales;
     private TextView scannedItemTextView;
-    private ScrollForeverTextView runningTextView;
+    private MarqueeTextView runningTextView;
     private List<UsbDevice> scaleList;
     private MediaPlayer alarmAudio;
 
@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         nextButton.setEnabled(false);
         nextButton.setOnClickListener(new NextButtonListener());
         scannedItemTextView = (TextView) findViewById(R.id.scanned_item_text_view);
-        runningTextView = (ScrollForeverTextView) findViewById(R.id.marquee_text_view);
+        runningTextView = (MarqueeTextView) findViewById(R.id.marquee_text_view);
         alarmAudio = MediaPlayer.create(this, R.raw.alarm);
         timer = new Timer();
         isAnyUsbConnected = false;
@@ -241,10 +241,15 @@ public class MainActivity extends AppCompatActivity {
         } catch(IllegalArgumentException e) {
             Log.e("Client", "IllegalArgumentException: " + e.toString());
         }
+
     }
 
-    public void setMsgTextView(String msg) {
-        runningTextView.setText(msg);
+    public void setRunningTextView(String text) {
+        runningTextView.setText(text);
+    }
+
+    public void setNewRunningTextView(String text) {
+        runningTextView.setNewText(text);
     }
 
     public void restartActivity(int type) {
