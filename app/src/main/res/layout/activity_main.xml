@@ -7,7 +7,7 @@
 
     <com.medion.project_icescream403.MarqueeTextView
         android:id="@+id/marquee_text_view"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_alignParentTop="true"
@@ -153,14 +153,6 @@
         android:text="下一筆配料"
         android:textColor="@android:color/black"
         android:textSize="50sp" />
-
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/confirm"
-        android:onClick="Test"
-        android:text="SHit fuf" />
 
     <Button
         android:id="@+id/confirm"

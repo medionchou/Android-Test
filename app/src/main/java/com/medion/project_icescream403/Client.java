@@ -1,6 +1,7 @@
 package com.medion.project_icescream403;
 
 
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Process;
@@ -15,6 +16,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,8 +26,8 @@ import java.util.List;
  * Created by Medion on 2015/7/15.
  */
 public class Client implements Runnable {
-    private final String SERVER_IP = "140.113.167.14";
-    private final int SERVER_PORT = 9000;
+    private String SERVER_IP = "140.113.167.14";
+    private int SERVER_PORT = 9000;
 
     private Handler mHandler;
     private ByteBuffer inputBuffer;
@@ -39,6 +41,8 @@ public class Client implements Runnable {
     private CharBuffer outStream;
     private MainActivity mainActivity;
     private int client_state;
+    private List<Byte> buffer;
+    private List<String> precision;
 
     private boolean updateGUI;
     private boolean isTerminated;
@@ -58,6 +62,12 @@ public class Client implements Runnable {
         recipeGroup = new LinkedList<>();
         this.mainActivity = mainActivity;
 
+        SharedPreferences settings = mainActivity.getSharedPreferences("IPFILE", 0);
+        SERVER_IP = settings.getString("IP", "140.113.167.14");
+        SERVER_PORT = settings.getInt("PORT", 9000);
+
+        buffer = new ArrayList<>();
+        precision = new ArrayList<>();
     }
 
     @Override
@@ -74,7 +84,7 @@ public class Client implements Runnable {
                     /*
                         Waiting for connection and retry to connect to server
                      */
-                    Log.v("Client", "updateGUI connecting");
+                    Log.v("MyLog", "updateGUI connecting");
                     Message msg = mHandler.obtainMessage();
                     msg.what = States.CONNECTING;
                     mHandler.sendMessage(msg);
@@ -98,7 +108,7 @@ public class Client implements Runnable {
 
                     // update ProgressDialog. Dismiss connecting dialog and show PDA connecting.
                     if (updateGUI) {
-                        Log.v("Client", "updateGUI");
+                        Log.v("MyLog", "updateGUI");
                         Message msg = mHandler.obtainMessage();
                         msg.what = States.CONNECTED;
                         mHandler.sendMessage(msg);
@@ -111,48 +121,65 @@ public class Client implements Runnable {
 
                     // socket read if server sends data.
                     int num;
+
                     while ((num = socketChannel.read(inputBuffer)) > 0) {
-
                         inputBuffer.flip();
-                        serverReplayBuffer += Charset.defaultCharset().decode(inputBuffer);
-                        inputBuffer.clear();
-                        while(serverReplayBuffer.contains("<END>")) {
-                            int endIndex = serverReplayBuffer.indexOf("<END>") + 5;
-
-                            if (endIndex == -1)
-                                endIndex = 0;
-
-                            String endLine = serverReplayBuffer.substring(0, endIndex);
-
-                            Log.v("Client", endLine);
-
-                            if (endLine.contains("CONNECT_OK<END>")) {
-                                client_state = States.CONNECT_OK;
-                            } else if (endLine.contains("RECIPE") && !endLine.contains("RECIPE_DONE")) {
-                                groupMix(endLine);
-                            } else if (endLine.contains("PDA_ON<END>")) {
-                                Message msg = mHandler.obtainMessage();
-                                msg.what = States.PDA_CONNECTED;
-                                mHandler.sendMessage(msg);
-                            } else if (endLine.contains("PDA_OFF<END>")) {
-                                Message msg = mHandler.obtainMessage();
-                                msg.what = States.PDA_CONNECTING;
-                                mHandler.sendMessage(msg);
-                            } else if (endLine.contains("QUERY_SPICE")) {
-                                serialNum = endLine.split("\\t|<END>")[1];
-                                Log.v("Client", serialNum + " " + "Test");
-                            } else if (endLine.contains("MSG")) {
-                                String tmp;
-                                tmp = endLine.replace("<END>", "");
-                                tmp = tmp.replace("MSG\t", "");
-                                msg = tmp;
-                            }
-                            serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
+                        while (inputBuffer.hasRemaining()) {
+                            buffer.add(inputBuffer.get());
                         }
+
+                        inputBuffer.clear();
                     }
 
                     if (num < 0)
                         throw new IOException("Server disconnect");
+
+                    if (buffer.size() > 0) {
+                        if (buffer.get(buffer.size() - 1) > 0) {
+                            byte[] tmp = new byte[buffer.size()];
+                            for (int i = 0; i < tmp.length; i++)
+                                tmp[i] = buffer.get(i);
+                            serverReplayBuffer += new String(tmp, "UTF-8");
+                            buffer.clear();
+                        }
+                    }
+
+                    while(serverReplayBuffer.contains("<END>")) {
+                        int endIndex = serverReplayBuffer.indexOf("<END>") + 5;
+
+                        if (endIndex == -1)
+                            endIndex = 0;
+
+                        String endLine = serverReplayBuffer.substring(0, endIndex);
+
+                        Log.v("MyLog", endLine);
+
+                        if (endLine.contains("CONNECT_OK<END>")) {
+                            client_state = States.CONNECT_OK;
+                        } else if (endLine.contains("RECIPE") && !endLine.contains("RECIPE_DONE")) {
+                            groupMix(endLine);
+                        } else if (endLine.contains("PDA_ON<END>")) {
+                            Message msg = mHandler.obtainMessage();
+                            msg.what = States.PDA_CONNECTED;
+                            mHandler.sendMessage(msg);
+                        } else if (endLine.contains("PDA_OFF<END>")) {
+                            Message msg = mHandler.obtainMessage();
+                            msg.what = States.PDA_CONNECTING;
+                            mHandler.sendMessage(msg);
+                        } else if (endLine.contains("QUERY_SPICE")) {
+                            serialNum = endLine.split("\\t|<END>")[1];
+                            Log.v("MyLog", serialNum + " " + "Test");
+                        } else if (endLine.contains("MSG")) {
+                            String tmp;
+                            tmp = endLine.replace("<END>", "");
+                            tmp = tmp.replace("MSG\t", "");
+                            msg = tmp;
+                        } else if (endLine.contains("AC_RANGE")) {
+                            parsePrecision(endLine);
+                        }
+                        serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
+                    }
+
 
                     // socket write if string cmd not empty
                     switch(client_state) {
@@ -166,7 +193,7 @@ public class Client implements Runnable {
                             break;
                         case States.CONNECT_OK:
                             if (cmd.length() > 0) {
-                                Log.v("Client", "Sending");
+                                Log.v("MyLog", "Sending");
                                 outStream = CharBuffer.wrap(cmd);
                                 while (outStream.hasRemaining()) {
                                     socketChannel.write(Charset.defaultCharset().encode(outStream));
@@ -203,15 +230,15 @@ public class Client implements Runnable {
             }
         } catch(UnknownHostException e) {
             /*Server not exist*/
-            Log.e("Client", "UnknownHostException 88 "  + e.toString());
+            Log.e("MyLog", "UnknownHostException 88 "  + e.toString());
 
         } catch(IOException e ) {
             /*Socket error*/
-            Log.e("Client", "IOException 92 " + e.toString());
+            Log.e("MyLog", "IOException 92 " + e.toString());
 
             // restart activity if connection fails.
-            if (e.toString().contains("Server disconnect") || e.toString().contains("SocketTimeoutException")) {
-                Log.v("Client", "Reconnect!!");
+            if (e.toString().contains("Server disconnect") || e.toString().contains("SocketTimeoutException") || e.toString().contains("ECONNRESET")) {
+                Log.v("MyLog", "Reconnect!!");
                 mainActivity.runOnUiThread(
                         new Runnable() {
                             @Override
@@ -223,14 +250,14 @@ public class Client implements Runnable {
             }
         } catch(InterruptedException e) {
             /**/
-            Log.e("Client", "Thread sleep exceptiong 105 " + e.toString());
+            Log.e("MyLog", "Thread sleep exceptiong 105 " + e.toString());
 
         } finally {
             try {
                 if (socketChannel != null)
                     socketChannel.close();
             } catch (IOException err) {
-                Log.e("Client", "IOException 111 " +  err.toString());
+                Log.e("MyLog", "IOException 111 " +  err.toString());
             }
         }
     }
@@ -270,7 +297,7 @@ public class Client implements Runnable {
                 socketChannel.close();
 
         } catch (IOException err) {
-            Log.e("Client", "IOException 220 " +  err.toString());
+            Log.e("MyLog", "IOException 220 " +  err.toString());
         }
 
     }
@@ -287,6 +314,17 @@ public class Client implements Runnable {
         recipeGroup.add(item);
         mainActivity.retainRecipe(recipeGroup);
 
+    }
+
+    private void parsePrecision(String raw) {
+        String[] parsed = raw.split("\t|<END>");
+
+
+        for (int i = 1; i < parsed.length; i++) {
+            precision.add(parsed[i]);
+        }
+
+        mainActivity.setPrecision(precision);
     }
 
 }

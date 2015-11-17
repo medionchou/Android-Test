@@ -4,7 +4,9 @@ package com.medion.project_icescream403;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -12,10 +14,20 @@ import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Bundle;
+import android.os.Parcel;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.InputEvent;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +42,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
     private final int VENDOR_ID = 1659;
@@ -43,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private ScaleManager scaleManager;
     private Client client;
     private List<List<Recipe>> recipeGroup;
+    private List<String> precision;
     private Button confirmButton;
     private Button nextButton;
     private Timer timer;
@@ -55,9 +70,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean isAnyUsbConnected; ///
     private int globalState;
 
-    public void Test(View view) {
-        Toast.makeText(this, "SSSSSSS", Toast.LENGTH_SHORT).show();
-    }
+    private int count;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,18 +82,18 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < scales.length; i++)
             isAnyUsbConnected |= scales[i].isUsbConnected();
 
-        //clientThread.start();
+        clientThread.start();
         //scaleThread.start();
 
-        if (scales.length > 0 && isAnyUsbConnected) {
-            clientThread.start();
-            scaleThread.start();
-        } else {
-            /** TODO:
-             *      Perhaps need to deliver Recipe data to the intent restarted.
-             **/
-            restartActivity(States.USB_RESTART);
-        }
+//        if (scales.length > 0 && isAnyUsbConnected) {
+//            clientThread.start();
+//            scaleThread.start();
+//        } else {
+//            /** TODO:
+//             *      Perhaps need to deliver Recipe data to the intent restarted.
+//             **/
+//            restartActivity(States.USB_RESTART);
+//        }
     }
 
     private void initObject() {
@@ -88,13 +102,13 @@ public class MainActivity extends AppCompatActivity {
         scaleList = new ArrayList<>();
 
         for (UsbDevice device : deviceList.values()) {
-            Log.v("Client", device.toString());
+            Log.v("MyLog", device.toString());
             if (device.getVendorId() == VENDOR_ID) {
                 //Log.v("Client", device.toString());
                 scaleList.add(device);
             }
         }
-        Log.v("Client", "HET");
+
 
         Collections.sort(scaleList, new Comparator<UsbDevice>() {
             @Override
@@ -106,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
         scales = new Scale[scaleList.size()];
         for (int i = 0; i < scaleList.size(); i++) {
             // creating scales asyntask to receive scale data
-            //Log.v("Client", scaleList.get(i).toString());
+            //Log.v("MyLog", scaleList.get(i).toString());
             if (i == 0)
                 scales[i] = new Scale(scaleList.get(i), this, String.valueOf(i), false);
             else
@@ -114,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-        Log.v("Client", "Connected USB: " + String.valueOf(scales.length));
+        Log.v("MyLog", "Connected USB: " + String.valueOf(scales.length));
 
         dialog = new ProgressDialog(this);
         pdaDialog = new ProgressDialog(this);
@@ -134,6 +148,30 @@ public class MainActivity extends AppCompatActivity {
         alarmAudio = MediaPlayer.create(this, R.raw.alarm);
         timer = new Timer();
         isAnyUsbConnected = false;
+
+        count = 0;
+
+        dialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
+            @Override
+            public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                String msg = ((TextView)MainActivity.this.dialog.findViewById(android.R.id.message)).getText().toString();
+
+                if (keyCode == KeyEvent.KEYCODE_BACK) {
+                    if (count == 40) {
+                        count = 0;
+                        Log.v("MyLog", "WIN");
+                        dialog.dismiss();
+                    } else {
+                        count++;
+                    }
+                    Log.v("MyLog", "hi " + count) ;
+                }
+
+
+                return false;
+            }
+        });
+
     }
 
     private void deRefObject() {
@@ -160,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         if (clientThread == null && scaleThread == null) {
-            Log.v("Client", "thread is null");
+            Log.v("MyLog", "thread is null");
             initObject();
             if (recipeGroup != null) {
                 client.setRecipeGroup(recipeGroup);
@@ -175,10 +213,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     @Override
     protected void onStop() {
         super.onStop();
-        Log.v("Client", "onStop");
+        Log.v("MyLog", "onStop");
         if (recipeGroup == null) {
             recipeGroup = client.getRecipeGroup();
         }
@@ -201,6 +240,82 @@ public class MainActivity extends AppCompatActivity {
         //recipeGroup = null;
     }
 
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                final LinearLayout ip_portLayout = (LinearLayout)getLayoutInflater().inflate(R.layout.ip_port_layout, null);
+                builder.setTitle("設定IP及PORT");
+                builder.setView(ip_portLayout);
+
+                builder.setPositiveButton("確認", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        SharedPreferences settings = getSharedPreferences("IPFILE", 0);
+                        SharedPreferences.Editor editor = settings.edit();
+                        EditText ipView = (EditText) ip_portLayout.findViewById(R.id.ip);
+                        EditText portView = (EditText) ip_portLayout.findViewById(R.id.port);
+                        String ipTest = ipView.getText().toString();
+                        String portTest = portView.getText().toString();
+                        String ip = "127.0.0.1";
+                        Pattern pattern = Pattern.compile("[0-9]{1,3}+.[0-9]{1,3}+.[0-9]{1,3}+.[0-9]{1,3}+");
+                        Matcher matcher = pattern.matcher(ipTest);
+                        int port = 0;
+                        boolean checker = false;
+
+                        if (!portTest.equals("")) {
+                            if (Integer.valueOf(portTest) <= 65536) {
+                                port = Integer.valueOf(portTest);
+                                checker = true;
+                            }
+                        }
+
+                        checker = matcher.matches();
+
+                        if (matcher.matches()) {
+                            String[] strip = ipTest.split("\\.");
+                            boolean isMatch = true;
+
+                            for (String tmp : strip) {
+                                if (Integer.valueOf(tmp) > 255)
+                                    isMatch = false;
+                            }
+
+                            if (isMatch)
+                                ip = ipTest;
+
+                            checker |= isMatch;
+                        }
+
+                        if (checker) {
+                            editor.putString("IP", ip);
+                            editor.putInt("PORT", port);
+                            editor.apply();
+                        } else {
+                            AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                            alert.setTitle("警告");
+                            alert.setMessage("IP 或 PORT 設定錯誤");
+                            alert.show();
+                        }
+                    }
+                });
+                builder.show();
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
     private void displayDialog(int state) {
         switch (state) {
             case States.CONNECTING:
@@ -211,7 +326,7 @@ public class MainActivity extends AppCompatActivity {
                 dialog.setCancelable(false);
                 break;
             case States.CONNECTED:
-                Log.v("Client", "Dismiss");
+                Log.v("MyLog", "Dismiss");
                 globalState = States.CONNECTED;
                 if (dialog.isShowing())
                     dialog.dismiss();
@@ -222,13 +337,13 @@ public class MainActivity extends AppCompatActivity {
                 dialog.setMessage(getString(R.string.pda_connecting));
                 dialog.show();
                 dialog.setCancelable(false);
-                Log.v("Client", "Waiting for PDA Connection");
+                Log.v("MyLog", "Waiting for PDA Connection");
                 break;
             case States.PDA_CONNECTED:
                 globalState = States.PDA_CONNECTED;
                 if (dialog.isShowing())
                     dialog.dismiss();
-                Log.v("Client", "Connecting");
+                Log.v("MyLog", "Connecting");
                 break;
         }
     }
@@ -239,7 +354,7 @@ public class MainActivity extends AppCompatActivity {
             scales[index].stopDataRetrieval(true);
             scales[index].stopConnectUsb(true);
         } catch(IllegalArgumentException e) {
-            Log.e("Client", "IllegalArgumentException: " + e.toString());
+            Log.e("MyLog", "IllegalArgumentException: " + e.toString());
         }
 
     }
@@ -282,9 +397,13 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < recipeGroup.size(); i++) {
             List<Recipe> tmp = recipeGroup.get(i);
             for (int j = 0; j < tmp.size(); j++) {
-                Log.v("Client", tmp.get(j).toString());
+                Log.v("MyLog", tmp.get(j).toString());
             }
         }
+    }
+
+    public void setPrecision(List<String> precision) {
+        this.precision = precision;
     }
 
     private static class HandlerExtension extends Handler {
@@ -385,10 +504,21 @@ public class MainActivity extends AppCompatActivity {
                                 client.setCmd("QUERY_REPLY\tWRONG<END>");
                             }
 
-                            if (Math.abs(productWeight - scaleWeight) < 0.1)
-                                enabled = true;
-                            else
-                                enabled = false;
+                            int range;
+                            range = getRange(scaleWeight);
+
+                            if (range > 0) {
+                                if (Math.abs(productWeight - scaleWeight) < (Double.valueOf(precision.get(range))/1000.0)) {
+                                    enabled = true;
+                                } else {
+                                    enabled = false;
+                                }
+                            } else {
+                                if (Math.abs(productWeight - scaleWeight) < 0.1)
+                                    enabled = true;
+                                else
+                                    enabled = false;
+                            }
 
                         } else {
                             if (!serialNum.equals("")) {
@@ -433,15 +563,18 @@ public class MainActivity extends AppCompatActivity {
                                 pdaDialog.show();
                                 pdaDialog.setCancelable(false);
                                 pdaState = States.PDA_IDLING;
-                                Log.v("Client", "Waiting PDA Scanning");
+                                Log.v("MyLog", "Waiting PDA Scanning");
                             } else if (pdaState == States.PDA_SCANNING_CORRECT) {
                                 if (pdaDialog.isShowing())
                                     pdaDialog.dismiss();
                             }
 
-                            if ((Double.valueOf(scaleWeight) / Double.valueOf(productWeightText)) >= 0.9 && play_times == 1) {
-                                alarmAudio.start();
-                                play_times = 0;
+                            if (!productWeightText.equals("尚無配料資料")) {
+                                if ((scaleWeight/ Double.valueOf(productWeightText)) >= 0.9 && play_times == 1) {
+
+                                    alarmAudio.start();
+                                    play_times = 0;
+                                }
                             }
 
                             recipeIDView.setText(ingredientName);
@@ -453,13 +586,13 @@ public class MainActivity extends AppCompatActivity {
                             else
                                 scaleWeightView.setTextColor(Color.RED);
 
-                            confirmButton.setEnabled(true);
+                            confirmButton.setEnabled(enabled); // enabled is set to true
                         }
                     });
 
 
                 } catch (InterruptedException e) {
-                    Log.e("Client", "ScaleManager " + e.toString());
+                    Log.e("MyLog", "ScaleManager " + e.toString());
                 }
             }
         }
@@ -491,6 +624,19 @@ public class MainActivity extends AppCompatActivity {
         public void terminate() {
             stop = true;
         }
+
+        public int getRange(double weight) {
+            if (weight >= 0 && weight < 5) {
+                return 0;
+            } else if (weight >= 5 && weight < 10) {
+                return 1;
+            }  else if (weight >= 10 && weight < 20) {
+                return 2;
+            } else if (weight >= 20 && weight <= 30) {
+                return 3;
+            }
+            return -1;
+        }
     }
 
     private class ConfirmButtonListener implements View.OnClickListener {
@@ -510,7 +656,7 @@ public class MainActivity extends AppCompatActivity {
 
             scaleIndex = (scaleIndex + 1) % scaleManager.getScaleCount();
             newIndex = scaleIndex;
-            Log.v("Client", String.valueOf(scaleIndex));
+            Log.v("MyLog", String.valueOf(scaleIndex));
 
             if (recipeIndex == (recipeLength - 1)) {
                 scaleIndex = 0;
