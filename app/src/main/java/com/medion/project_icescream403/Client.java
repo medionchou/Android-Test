@@ -26,7 +26,7 @@ import java.util.List;
  * Created by Medion on 2015/7/15.
  */
 public class Client implements Runnable {
-    private String SERVER_IP = "140.113.167.14";
+    private String SERVER_IP = "192.168.1.30";
     private int SERVER_PORT = 9000;
 
     private Handler mHandler;

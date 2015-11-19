@@ -82,18 +82,18 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < scales.length; i++)
             isAnyUsbConnected |= scales[i].isUsbConnected();
 
-        clientThread.start();
+//        clientThread.start();
         //scaleThread.start();
 
-//        if (scales.length > 0 && isAnyUsbConnected) {
-//            clientThread.start();
-//            scaleThread.start();
-//        } else {
-//            /** TODO:
-//             *      Perhaps need to deliver Recipe data to the intent restarted.
-//             **/
-//            restartActivity(States.USB_RESTART);
-//        }
+        if (scales.length > 0 && isAnyUsbConnected) {
+            clientThread.start();
+            scaleThread.start();
+        } else {
+            /** TODO:
+             *      Perhaps need to deliver Recipe data to the intent restarted.
+             **/
+            restartActivity(States.USB_RESTART);
+        }
     }
 
     private void initObject() {
@@ -404,6 +404,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void setPrecision(List<String> precision) {
         this.precision = precision;
+
+        for (int i = 0; i < precision.size(); i++) {
+            Log.v("MyLog", precision.get(i));
+        }
     }
 
     private static class HandlerExtension extends Handler {
@@ -504,12 +508,17 @@ public class MainActivity extends AppCompatActivity {
                                 client.setCmd("QUERY_REPLY\tWRONG<END>");
                             }
 
-                            int range;
-                            range = getRange(scaleWeight);
+                            int range = -1;
+                            if (scaleWeight >= 0)
+                                range = getRange(scaleWeight);
 
                             if (range > 0) {
-                                if (Math.abs(productWeight - scaleWeight) < (Double.valueOf(precision.get(range))/1000.0)) {
-                                    enabled = true;
+                                if (precision != null) {
+                                    if (Math.abs(productWeight - scaleWeight) < ( Double.valueOf(precision.get(range)) / 1000.0)) {
+                                        enabled = true;
+                                    } else {
+                                        enabled = false;
+                                    }
                                 } else {
                                     enabled = false;
                                 }
@@ -570,8 +579,10 @@ public class MainActivity extends AppCompatActivity {
                             }
 
                             if (!productWeightText.equals("尚無配料資料")) {
-                                if ((scaleWeight/ Double.valueOf(productWeightText)) >= 0.9 && play_times == 1) {
+                                List<Recipe> recipeList = recipeGroup.get(0);
+                                Recipe recipe = recipeList.get(recipeIndex);
 
+                                if ((scaleWeight / recipe.getWeight()) >= 0.9 && play_times == 1) {
                                     alarmAudio.start();
                                     play_times = 0;
                                 }
