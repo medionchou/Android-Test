@@ -250,11 +250,10 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
         switch (item.getItemId()) {
             case R.id.action_settings:
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                final LinearLayout ip_portLayout = (LinearLayout)getLayoutInflater().inflate(R.layout.ip_port_layout, null);
+                final LinearLayout ip_portLayout = (LinearLayout) getLayoutInflater().inflate(R.layout.ip_port_layout, null);
                 builder.setTitle("設定IP及PORT");
                 builder.setView(ip_portLayout);
 
@@ -268,21 +267,25 @@ public class MainActivity extends AppCompatActivity {
                         String ipTest = ipView.getText().toString();
                         String portTest = portView.getText().toString();
                         String ip = "127.0.0.1";
-                        Pattern pattern = Pattern.compile("[0-9]{1,3}+.[0-9]{1,3}+.[0-9]{1,3}+.[0-9]{1,3}+");
+                        Pattern pattern = Pattern.compile("[0-9]{1,3}+\\.[0-9]{1,3}+\\.[0-9]{1,3}+\\.[0-9]{1,3}+");
                         Matcher matcher = pattern.matcher(ipTest);
                         int port = 0;
-                        boolean checker = false;
-
-                        if (!portTest.equals("")) {
-                            if (Integer.valueOf(portTest) <= 65536) {
-                                port = Integer.valueOf(portTest);
-                                checker = true;
-                            }
-                        }
+                        boolean checker;
 
                         checker = matcher.matches();
 
-                        if (matcher.matches()) {
+                        if (checker) {
+                            if (!portTest.equals("")) {
+                                if (Integer.valueOf(portTest) <= 65536) {
+                                    port = Integer.valueOf(portTest);
+                                    checker = true;
+                                } else {
+                                    checker = false;
+                                }
+                            }
+                        }
+
+                        if (checker) {
                             String[] strip = ipTest.split("\\.");
                             boolean isMatch = true;
 
@@ -294,8 +297,9 @@ public class MainActivity extends AppCompatActivity {
                             if (isMatch)
                                 ip = ipTest;
 
-                            checker |= isMatch;
+                            checker = isMatch;
                         }
+
 
                         if (checker) {
                             editor.putString("IP", ip);
@@ -433,6 +437,7 @@ public class MainActivity extends AppCompatActivity {
         private Scale[] scales;
         private int scaleCount; //how many scales are connected
         private int scaleIndex; //index of scale
+        private int cachedScaleIndex; //
         private int recipeIndex; // recipe entry in a recipe list
         private int pdaState; // pda status
         private boolean stop = false; // indicate terminatio
@@ -441,6 +446,7 @@ public class MainActivity extends AppCompatActivity {
             this.scales = scales;
             scaleCount = scales.length;
             scaleIndex = 0;
+            cachedScaleIndex = 0;
             recipeIndex = 0;
         }
 
@@ -450,6 +456,7 @@ public class MainActivity extends AppCompatActivity {
             final TextView productIDView = (TextView) findViewById(R.id.productID_text_view);
             final TextView productWeightView = (TextView) findViewById(R.id.product_weight_text_view);
             final TextView scaleWeightView = (TextView) findViewById(R.id.scale_weight_text_view);
+            final TextView biasView = (TextView) findViewById(R.id.precision_text_view);
 
             while (!stop) {
                 try {
@@ -469,8 +476,16 @@ public class MainActivity extends AppCompatActivity {
                     final String productName;
                     final String productWeightText;
                     final String productID;
+                    final String bias;
                     final boolean enabled;
-                    final double scaleWeight =  scales[scaleIndex].getScaleWeight().getWeight();
+                    final double scaleWeight;
+
+                    if (cachedScaleIndex != scaleIndex) {
+                        cachedScaleIndex = scaleIndex;
+                        scaleWeight = 0;
+                    } else {
+                        scaleWeight = scales[scaleIndex].getScaleWeight().getWeight();
+                    }
 
                     if (recipeGroup != null) {
                         if (recipeGroup.size() > 0) {
@@ -514,15 +529,18 @@ public class MainActivity extends AppCompatActivity {
 
                             if (range > 0) {
                                 if (precision != null) {
+                                    bias = String.valueOf(Double.valueOf(precision.get(range)) / 1000.0) + " KG";
                                     if (Math.abs(productWeight - scaleWeight) < ( Double.valueOf(precision.get(range)) / 1000.0)) {
                                         enabled = true;
                                     } else {
                                         enabled = false;
                                     }
                                 } else {
+                                    bias = "0.1 KG";
                                     enabled = false;
                                 }
                             } else {
+                                bias = "0.1 KG";
                                 if (Math.abs(productWeight - scaleWeight) < 0.1)
                                     enabled = true;
                                 else
@@ -542,6 +560,7 @@ public class MainActivity extends AppCompatActivity {
                             productName = getString(R.string.no_data);
                             productWeightText = getString(R.string.no_data);
                             productID = getString(R.string.no_data);
+                            bias = "無誤差值";
                             enabled = false;
                         }
 
@@ -559,6 +578,7 @@ public class MainActivity extends AppCompatActivity {
                         productName = getString(R.string.no_data);
                         productWeightText = getString(R.string.no_data);
                         productID = getString(R.string.no_data);
+                        bias = "無誤差值";
                         enabled = false;
                     }
 
@@ -582,8 +602,9 @@ public class MainActivity extends AppCompatActivity {
                                 List<Recipe> recipeList = recipeGroup.get(0);
                                 Recipe recipe = recipeList.get(recipeIndex);
 
-                                if ((scaleWeight / recipe.getWeight()) >= 0.9 && play_times == 1) {
-                                    alarmAudio.start();
+                                if ((scaleWeight / recipe.getWeight()) >= 0.9) {
+                                    if (!alarmAudio.isPlaying())
+                                        alarmAudio.start();
                                     play_times = 0;
                                 }
                             }
@@ -592,6 +613,7 @@ public class MainActivity extends AppCompatActivity {
                             productIDView.setText(productName);
                             productWeightView.setText(productWeightText);
                             scaleWeightView.setText(String.valueOf(scaleWeight) + " KG");
+                            biasView.setText(bias);
                             if (enabled)
                                 scaleWeightView.setTextColor(Color.GREEN);
                             else
@@ -613,6 +635,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void setScaleIndex(int val) {
+            cachedScaleIndex = scaleIndex;
             scaleIndex = val;
         }
 

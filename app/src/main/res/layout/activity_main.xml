@@ -36,7 +36,7 @@
         android:layout_marginTop="20dp"
         android:text="配方名稱: "
         android:textColor="@android:color/black"
-        android:textSize="30sp" />
+        android:textSize="35sp" />
 
     <!-- editable -->
     <TextView
@@ -48,7 +48,7 @@
         android:layout_toRightOf="@+id/recipe_text_view"
         android:text="配方ID"
         android:textColor="@android:color/black"
-        android:textSize="30sp" />
+        android:textSize="35sp" />
 
     <ScrollView
         android:layout_width="wrap_content"
@@ -63,7 +63,7 @@
             android:layout_height="wrap_content"
             android:text="歷史配料"
             android:textColor="@android:color/black"
-            android:textSize="30sp" />
+            android:textSize="35sp" />
     </ScrollView>
 
     <TextView
@@ -75,7 +75,7 @@
         android:layout_toLeftOf="@+id/scale_text_view"
         android:text="目前物料 :"
         android:textColor="@android:color/black"
-        android:textSize="30sp" />
+        android:textSize="35sp" />
 
 
     <!-- editable -->
@@ -89,7 +89,7 @@
         android:layout_toRightOf="@+id/product_text_view"
         android:text="產品ID"
         android:textColor="@android:color/black"
-        android:textSize="30sp" />
+        android:textSize="35sp" />
 
     <TextView
         android:id="@+id/product_weight_label_text_view"
@@ -100,7 +100,7 @@
         android:layout_toLeftOf="@+id/scale_text_view"
         android:text="物料重量 :"
         android:textColor="@android:color/black"
-        android:textSize="30sp" />
+        android:textSize="35sp" />
 
 
     <!-- editable -->
@@ -115,7 +115,7 @@
         android:gravity="start"
         android:text="產品重量"
         android:textColor="@android:color/black"
-        android:textSize="30sp" />
+        android:textSize="35sp" />
 
 
     <!-- editable -->
@@ -128,7 +128,7 @@
         android:layout_toLeftOf="@+id/scale_text_view"
         android:text="當前物重 :"
         android:textColor="@android:color/black"
-        android:textSize="30sp" />
+        android:textSize="35sp" />
 
     <TextView
         android:id="@+id/scale_weight_text_view"
@@ -141,13 +141,36 @@
         android:gravity="start"
         android:text="磅秤未連接"
         android:textColor="@android:color/holo_red_light"
-        android:textSize="30sp" />
+        android:textSize="35sp" />
+
+    <TextView
+        android:id="@+id/precision_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        android:text="當前誤差 :"
+        android:textColor="@android:color/black"
+        android:layout_toLeftOf="@+id/scale_text_view"
+        android:layout_below="@+id/current_weight_text_view"
+        android:textSize="35sp"/>
+
+    <TextView
+        android:id="@+id/precision_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="25dp"
+        android:layout_marginTop="50dp"
+        android:text="無誤差值"
+        android:textColor="@android:color/black"
+        android:layout_toRightOf="@+id/precision_label"
+        android:layout_below="@+id/current_weight_text_view"
+        android:textSize="35sp"/>
 
     <Button
         android:id="@+id/nextBatch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/current_weight_text_view"
+        android:layout_below="@+id/precision_label"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="50dp"
         android:text="下一筆配料"
