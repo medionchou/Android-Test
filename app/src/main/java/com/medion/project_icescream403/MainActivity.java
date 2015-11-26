@@ -560,7 +560,7 @@ public class MainActivity extends AppCompatActivity {
                             productName = getString(R.string.no_data);
                             productWeightText = getString(R.string.no_data);
                             productID = getString(R.string.no_data);
-                            bias = "無誤差值";
+                            bias = getString(R.string.no_data);
                             enabled = false;
                         }
 
@@ -578,7 +578,7 @@ public class MainActivity extends AppCompatActivity {
                         productName = getString(R.string.no_data);
                         productWeightText = getString(R.string.no_data);
                         productID = getString(R.string.no_data);
-                        bias = "無誤差值";
+                        bias = getString(R.string.no_data);
                         enabled = false;
                     }
 
