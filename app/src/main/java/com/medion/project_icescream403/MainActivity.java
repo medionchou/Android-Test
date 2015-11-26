@@ -16,6 +16,8 @@ import android.os.Message;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.support.v7.app.AppCompatActivity;
+import android.text.SpannableString;
+import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.InputEvent;
@@ -58,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private Client client;
     private List<List<Recipe>> recipeGroup;
     private List<String> precision;
+    private List<String> weight;
     private Button confirmButton;
     private Button nextButton;
     private Timer timer;
@@ -148,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
         alarmAudio = MediaPlayer.create(this, R.raw.alarm);
         timer = new Timer();
         isAnyUsbConnected = false;
+        weight = new ArrayList<>();
 
         count = 0;
 
@@ -324,8 +328,8 @@ public class MainActivity extends AppCompatActivity {
         switch (state) {
             case States.CONNECTING:
                 globalState = States.CONNECTING;
-                dialog.setTitle(getString(R.string.progress_title));
-                dialog.setMessage(getString(R.string.progress_message));
+                dialog.setTitle(setDialogText(getString(R.string.progress_title), 1));
+                dialog.setMessage(setDialogText(getString(R.string.progress_message), 3));
                 dialog.show();
                 dialog.setCancelable(false);
                 break;
@@ -337,8 +341,8 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case States.PDA_CONNECTING:
                 globalState = States.PDA_CONNECTING;
-                dialog.setTitle(getString(R.string.progress_title));
-                dialog.setMessage(getString(R.string.pda_connecting));
+                dialog.setTitle(setDialogText(getString(R.string.progress_title), 1));
+                dialog.setMessage(setDialogText(getString(R.string.pda_connecting), 3));
                 dialog.show();
                 dialog.setCancelable(false);
                 Log.v("MyLog", "Waiting for PDA Connection");
@@ -373,11 +377,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void restartActivity(int type) {
         if (type == States.USB_RESTART) {
-            dialog.setTitle(getString(R.string.progress_warning));
-            dialog.setMessage(getString(R.string.usb_restart_message));
+            dialog.setTitle(setDialogText(getString(R.string.progress_warning), 1));
+            dialog.setMessage(setDialogText(getString(R.string.usb_restart_message), 3));
         } else if (type == States.SERVER_RESTART) {
-            dialog.setTitle(getString(R.string.progress_warning));
-            dialog.setMessage(getString(R.string.server_restart_message));
+            dialog.setTitle(setDialogText(getString(R.string.progress_warning), 1));
+            dialog.setMessage(setDialogText(getString(R.string.server_restart_message), 3));
         }
         dialog.setCancelable(false);
         dialog.show();
@@ -412,6 +416,13 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < precision.size(); i++) {
             Log.v("MyLog", precision.get(i));
         }
+    }
+
+    public SpannableString setDialogText(String text, float size) {
+        SpannableString ss = new SpannableString(text);
+        ss.setSpan(new RelativeSizeSpan(size), 0, ss.length(), 0);
+
+        return ss;
     }
 
     private static class HandlerExtension extends Handler {
@@ -587,8 +598,8 @@ public class MainActivity extends AppCompatActivity {
                         public void run() {
 
                             if (pdaState == States.PDA_SCANNING) {
-                                pdaDialog.setTitle(getString(R.string.pda_progress_status));
-                                pdaDialog.setMessage(productID + " " + productName);
+                                pdaDialog.setTitle(setDialogText(getString(R.string.pda_progress_status), 1));
+                                pdaDialog.setMessage(setDialogText(productID + " " + productName, 3));
                                 pdaDialog.show();
                                 pdaDialog.setCancelable(false);
                                 pdaState = States.PDA_IDLING;
@@ -705,11 +716,27 @@ public class MainActivity extends AppCompatActivity {
 
             if (recipeIndex == (recipeLength - 1)) {
                 String ingredientID = recipeGroup.get(0).get(0).getIngredientID();
+                EditText editText = (EditText) findViewById(R.id.bucket);
+                String content = editText.getText().toString();
+                String command = "RECIPE_DONE\t" + ingredientID + "\t";
+                int bucket = content.equals("") ? 1 : Integer.valueOf(content);
+
+                for (int i = 0; i < weight.size(); i++) {
+                    String tmp = weight.get(i);
+                    command += tmp;
+
+                    if (i < weight.size() - 1)
+                        command += "\t";
+                }
+                command += "<END>";
 
                 recipeIndex = 0;
                 scaleManager.setRecipeIndex(recipeIndex);
                 recipeGroup.remove(0);
-                client.setCmd("RECIPE_DONE\t" + ingredientID + "<END>");
+
+                for (int i = 0; i < bucket; i++)
+                    client.setCmd(command);
+
                 scannedItemTextView.setText("歷史配料");
 
                 if (recipeGroup.size() > 0) {
@@ -735,6 +762,7 @@ public class MainActivity extends AppCompatActivity {
                 if (tmp.length() > 0)
                     tmp += "\n";
                 tmp += "第" + String.valueOf(count) + "筆:\n" + "\t物料名稱: " + recipe.getProductName() + "\n\t秤得重量: " + scaleWeightView.getText().toString();
+                weight.add(scaleWeightView.getText().toString());
                 scannedItemTextView.setText(tmp);
                 recipeIndex = recipeIndex + 1;
                 scaleManager.setRecipeIndex(recipeIndex);
