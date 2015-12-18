@@ -158,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
         dialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
             @Override
             public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-                String msg = ((TextView)MainActivity.this.dialog.findViewById(android.R.id.message)).getText().toString();
+                String msg = ((TextView) MainActivity.this.dialog.findViewById(android.R.id.message)).getText().toString();
 
                 if (keyCode == KeyEvent.KEYCODE_BACK) {
                     if (count == 40) {
@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         count++;
                     }
-                    Log.v("MyLog", "hi " + count) ;
+                    Log.v("MyLog", "hi " + count);
                 }
 
 
@@ -217,6 +217,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        //super.onBackPressed();
+    }
 
     @Override
     protected void onStop() {
@@ -361,7 +365,7 @@ public class MainActivity extends AppCompatActivity {
             unregisterReceiver(scales[index].getBroadcastReceiver());
             scales[index].stopDataRetrieval(true);
             scales[index].stopConnectUsb(true);
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             Log.e("MyLog", "IllegalArgumentException: " + e.toString());
         }
 
@@ -498,6 +502,20 @@ public class MainActivity extends AppCompatActivity {
                         scaleWeight = scales[scaleIndex].getScaleWeight().getWeight();
                     }
 
+                    int range = -1;
+                    if (scaleWeight >= 0)
+                        range = getRange(scaleWeight);
+
+                    if (range >= 0) {
+                        if (precision != null) {
+                            bias = String.valueOf(Double.valueOf(precision.get(range)) / 1000.0) + " KG";
+                        } else {
+                            bias = "0.1 KG";
+                        }
+                    } else {
+                        bias = "0.1 KG";
+                    }
+
                     if (recipeGroup != null) {
                         if (recipeGroup.size() > 0) {
 
@@ -534,24 +552,16 @@ public class MainActivity extends AppCompatActivity {
                                 client.setCmd("QUERY_REPLY\tWRONG<END>");
                             }
 
-                            int range = -1;
                             if (scaleWeight >= 0)
                                 range = getRange(scaleWeight);
 
-                            if (range > 0) {
-                                if (precision != null) {
-                                    bias = String.valueOf(Double.valueOf(precision.get(range)) / 1000.0) + " KG";
-                                    if (Math.abs(productWeight - scaleWeight) < ( Double.valueOf(precision.get(range)) / 1000.0)) {
-                                        enabled = true;
-                                    } else {
-                                        enabled = false;
-                                    }
+                            if (range >= 0) {
+                                if (Math.abs(productWeight - scaleWeight) < (Double.valueOf(precision.get(range)) / 1000.0)) {
+                                    enabled = true;
                                 } else {
-                                    bias = "0.1 KG";
                                     enabled = false;
                                 }
                             } else {
-                                bias = "0.1 KG";
                                 if (Math.abs(productWeight - scaleWeight) < 0.1)
                                     enabled = true;
                                 else
@@ -571,7 +581,7 @@ public class MainActivity extends AppCompatActivity {
                             productName = getString(R.string.no_data);
                             productWeightText = getString(R.string.no_data);
                             productID = getString(R.string.no_data);
-                            bias = getString(R.string.no_data);
+//                            bias = getString(R.string.no_data);
                             enabled = false;
                         }
 
@@ -589,7 +599,7 @@ public class MainActivity extends AppCompatActivity {
                         productName = getString(R.string.no_data);
                         productWeightText = getString(R.string.no_data);
                         productID = getString(R.string.no_data);
-                        bias = getString(R.string.no_data);
+//                        bias = getString(R.string.no_data);
                         enabled = false;
                     }
 
@@ -675,7 +685,7 @@ public class MainActivity extends AppCompatActivity {
                 return 0;
             } else if (weight >= 5 && weight < 10) {
                 return 1;
-            }  else if (weight >= 10 && weight < 20) {
+            } else if (weight >= 10 && weight < 20) {
                 return 2;
             } else if (weight >= 20 && weight <= 30) {
                 return 3;
@@ -720,6 +730,11 @@ public class MainActivity extends AppCompatActivity {
                 String content = editText.getText().toString();
                 String command = "RECIPE_DONE\t" + ingredientID + "\t";
                 int bucket = content.equals("") ? 1 : Integer.valueOf(content);
+                TextView scaleWeightView = (TextView) findViewById(R.id.scale_weight_text_view);
+                String ww = scaleWeightView.getText().toString().substring(0, scaleWeightView.getText().toString().length() - 3);
+                weight.add(ww);
+
+                String test = "";
 
                 for (int i = 0; i < weight.size(); i++) {
                     String tmp = weight.get(i);
@@ -734,8 +749,11 @@ public class MainActivity extends AppCompatActivity {
                 scaleManager.setRecipeIndex(recipeIndex);
                 recipeGroup.remove(0);
 
-                for (int i = 0; i < bucket; i++)
-                    client.setCmd(command);
+                for (int i = 0; i < bucket; i++) {
+                    test += command;
+                }
+
+                client.setCmd(test);
 
                 scannedItemTextView.setText("歷史配料");
 
@@ -744,7 +762,7 @@ public class MainActivity extends AppCompatActivity {
                     AlertDialog alertDialog;
 
                     builder.setTitle(R.string.alert_dialog_title)
-                           .setMessage(R.string.alert_dialog_message);
+                            .setMessage(R.string.alert_dialog_message);
                     alertDialog = builder.create();
                     alertDialog.show();
                     nextButton.setEnabled(true);
@@ -762,7 +780,8 @@ public class MainActivity extends AppCompatActivity {
                 if (tmp.length() > 0)
                     tmp += "\n";
                 tmp += "第" + String.valueOf(count) + "筆:\n" + "\t物料名稱: " + recipe.getProductName() + "\n\t秤得重量: " + scaleWeightView.getText().toString();
-                weight.add(scaleWeightView.getText().toString());
+                String ww = scaleWeightView.getText().toString().substring(0, scaleWeightView.getText().toString().length() - 3);
+                weight.add(ww);
                 scannedItemTextView.setText(tmp);
                 recipeIndex = recipeIndex + 1;
                 scaleManager.setRecipeIndex(recipeIndex);

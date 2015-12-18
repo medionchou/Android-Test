@@ -63,7 +63,7 @@
             android:layout_height="wrap_content"
             android:text="歷史配料"
             android:textColor="@android:color/black"
-            android:textSize="60sp" />
+            android:textSize="50sp" />
     </ScrollView>
 
     <TextView

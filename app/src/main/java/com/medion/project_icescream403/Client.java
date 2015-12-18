@@ -1,6 +1,7 @@
 package com.medion.project_icescream403;
 
 
+import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
@@ -177,6 +178,7 @@ public class Client implements Runnable {
                         } else if (endLine.contains("AC_RANGE")) {
                             parsePrecision(endLine);
                         }
+
                         serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
                     }
 
@@ -319,6 +321,9 @@ public class Client implements Runnable {
     private void parsePrecision(String raw) {
         String[] parsed = raw.split("\t|<END>");
 
+
+        if (precision.size() > 0)
+            precision.clear();
 
         for (int i = 1; i < parsed.length; i++) {
             precision.add(parsed[i]);
