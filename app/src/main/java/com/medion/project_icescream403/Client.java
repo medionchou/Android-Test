@@ -27,7 +27,7 @@ import java.util.List;
  * Created by Medion on 2015/7/15.
  */
 public class Client implements Runnable {
-    private String SERVER_IP = "192.168.1.30";
+    private String SERVER_IP = "192.168.1.250";
     private int SERVER_PORT = 9000;
 
     private Handler mHandler;
@@ -38,7 +38,7 @@ public class Client implements Runnable {
     private String serialNum;
     private String msg;
     private String oldMsg;
-    private List< List<Recipe> > recipeGroup;
+    private List<List<Recipe>> recipeGroup;
     private CharBuffer outStream;
     private MainActivity mainActivity;
     private int client_state;
@@ -47,7 +47,6 @@ public class Client implements Runnable {
 
     private boolean updateGUI;
     private boolean isTerminated;
-
 
 
     public Client(Handler mHandler, MainActivity mainActivity) {
@@ -64,7 +63,7 @@ public class Client implements Runnable {
         this.mainActivity = mainActivity;
 
         SharedPreferences settings = mainActivity.getSharedPreferences("IPFILE", 0);
-        SERVER_IP = settings.getString("IP", "140.113.167.14");
+        SERVER_IP = settings.getString("IP", "192.168.1.250");
         SERVER_PORT = settings.getInt("PORT", 9000);
 
         buffer = new ArrayList<>();
@@ -79,7 +78,8 @@ public class Client implements Runnable {
 
     private void setUpConnection() {
         try {
-            while(!isTerminated) {
+            com.medion.project_icescream403.Log.getRequest("<h2>*** Client Start ***</h2>");
+            while (!isTerminated) {
                 if (socketChannel == null) {
 
                     /*
@@ -145,7 +145,7 @@ public class Client implements Runnable {
                         }
                     }
 
-                    while(serverReplayBuffer.contains("<END>")) {
+                    while (serverReplayBuffer.contains("<END>")) {
                         int endIndex = serverReplayBuffer.indexOf("<END>") + 5;
 
                         if (endIndex == -1)
@@ -159,6 +159,7 @@ public class Client implements Runnable {
                             client_state = States.CONNECT_OK;
                         } else if (endLine.contains("RECIPE") && !endLine.contains("RECIPE_DONE")) {
                             groupMix(endLine);
+                            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> RECIPE: </font></b>" + endLine);
                         } else if (endLine.contains("PDA_ON<END>")) {
                             Message msg = mHandler.obtainMessage();
                             msg.what = States.PDA_CONNECTED;
@@ -169,7 +170,7 @@ public class Client implements Runnable {
                             mHandler.sendMessage(msg);
                         } else if (endLine.contains("QUERY_SPICE")) {
                             serialNum = endLine.split("\\t|<END>")[1];
-                            Log.v("MyLog", serialNum + " " + "Test");
+                            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> QUERY_SPICE: </font></b>" + endLine);
                         } else if (endLine.contains("MSG")) {
                             String tmp;
                             tmp = endLine.replace("<END>", "");
@@ -184,7 +185,7 @@ public class Client implements Runnable {
 
 
                     // socket write if string cmd not empty
-                    switch(client_state) {
+                    switch (client_state) {
                         case States.CONNECT_INITIALZING:
                             outStream = CharBuffer.wrap("CONNECT\tMS_M<END>");
                             while (outStream.hasRemaining()) {
@@ -195,7 +196,8 @@ public class Client implements Runnable {
                             break;
                         case States.CONNECT_OK:
                             if (cmd.length() > 0) {
-                                Log.v("MyLog", "Sending");
+                                Log.v("MyLog", cmd);
+                                com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"blue\">Send Command: </font></b>" + cmd);
                                 outStream = CharBuffer.wrap(cmd);
                                 while (outStream.hasRemaining()) {
                                     socketChannel.write(Charset.defaultCharset().encode(outStream));
@@ -230,36 +232,26 @@ public class Client implements Runnable {
                     Thread.sleep(1000);
                 }
             }
-        } catch(UnknownHostException e) {
-            /*Server not exist*/
-            Log.e("MyLog", "UnknownHostException 88 "  + e.toString());
-
-        } catch(IOException e ) {
+        } catch (Exception e) {
             /*Socket error*/
-            Log.e("MyLog", "IOException 92 " + e.toString());
-
             // restart activity if connection fails.
-            if (e.toString().contains("Server disconnect") || e.toString().contains("SocketTimeoutException") || e.toString().contains("ECONNRESET")) {
-                Log.v("MyLog", "Reconnect!!");
-                mainActivity.runOnUiThread(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                mainActivity.restartActivity(States.SERVER_RESTART);
-                            }
+            Log.v("MyLog", "Reconnect!!");
+            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught exception in service:</font></b>" + e.toString());
+            mainActivity.runOnUiThread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            mainActivity.restartActivity(States.SERVER_RESTART);
                         }
-                );
-            }
-        } catch(InterruptedException e) {
-            /**/
-            Log.e("MyLog", "Thread sleep exceptiong 105 " + e.toString());
+                    }
+            );
 
         } finally {
             try {
                 if (socketChannel != null)
                     socketChannel.close();
             } catch (IOException err) {
-                Log.e("MyLog", "IOException 111 " +  err.toString());
+                Log.e("MyLog", "IOException 111 " + err.toString());
             }
         }
     }
@@ -276,6 +268,7 @@ public class Client implements Runnable {
          */
         return serialNum;
     }
+
     public void setSerialNumber(String serialNum) {
         this.serialNum = serialNum;
     }
@@ -284,7 +277,7 @@ public class Client implements Runnable {
         this.cmd = cmd;
     }
 
-    public List< List<Recipe> > getRecipeGroup(){
+    public List<List<Recipe>> getRecipeGroup() {
         return recipeGroup;
     }
 
@@ -299,7 +292,7 @@ public class Client implements Runnable {
                 socketChannel.close();
 
         } catch (IOException err) {
-            Log.e("MyLog", "IOException 220 " +  err.toString());
+            Log.e("MyLog", "IOException 220 " + err.toString());
         }
 
     }
@@ -309,8 +302,8 @@ public class Client implements Runnable {
         String[] ingredients = serverReply.split("\\t|<N>|<END>");
         List<Recipe> item = new LinkedList<>();
 
-        for (int i = 0; i < ingredients.length; i=i+7) {
-            item.add(new Recipe(ingredients[i+1], ingredients[i+2], ingredients[i+3], ingredients[i+4], Double.parseDouble(ingredients[i+5]), ingredients[i+6]));
+        for (int i = 0; i < ingredients.length; i = i + 7) {
+            item.add(new Recipe(ingredients[i + 1], ingredients[i + 2], ingredients[i + 3], ingredients[i + 4], Double.parseDouble(ingredients[i + 5]), ingredients[i + 6]));
 
         }
         recipeGroup.add(item);

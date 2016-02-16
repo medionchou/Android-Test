@@ -17,7 +17,7 @@ import android.util.Log;
 /**
  * Created by Medion on 2015/8/12.
  */
-public class Scale implements ScaleInterface {
+public class ScaleSimulator implements ScaleInterface {
     private String ACTION_USB_PERMISSION = "USB_PERMISSION";
 
     /*rs-232 transferring setting */
@@ -38,53 +38,10 @@ public class Scale implements ScaleInterface {
     private boolean disconnect = false;
     private boolean dataState = false;
 
-    private BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-
-            if (ACTION_USB_PERMISSION.equals(action)) {
-                synchronized (this) {
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-
-                    } else {
-                    }
-                }
-            }
-
-        }
-    };
-
-    public Scale(UsbDevice usbDevice, final MainActivity activity, String permission, boolean isStop) {
-
-        setControlMsg();
-        this.usbDevice = usbDevice;
-        retrieveScaleData = new RetrieveScaleData();
-        stop = isStop;
-        ACTION_USB_PERMISSION += "_" + permission;
-
-
-        Log.v("Client", ACTION_USB_PERMISSION + " " + this.usbDevice.toString());
-
-
-        /*send msg to broadcastReceiver*/
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(activity, 0, new Intent(ACTION_USB_PERMISSION), 0);
-        IntentFilter intentFilter = new IntentFilter(ACTION_USB_PERMISSION);
-        activity.registerReceiver(mUsbReceiver, intentFilter);
-        usbManager = (UsbManager) activity.getSystemService(Context.USB_SERVICE);
-        usbManager.requestPermission(Scale.this.usbDevice, pendingIntent);
-
-        intf = this.usbDevice.getInterface(0);
-        endpoint = intf.getEndpoint(2);
-
-        if (usbManager.hasPermission(this.usbDevice)) {
-            connection = usbManager.openDevice(this.usbDevice);
-        }
-
-        retrieveScaleData.execute((Void) null);
-
-        scaleWeight.setPositive(false);
-        scaleWeight.setWeightValue(Double.MIN_VALUE);
+    public ScaleSimulator(UsbDevice usbDevice, final MainActivity activity, String permission, boolean isStop) {
+        scaleWeight.setPositive(true);
+        scaleWeight.setWeightValue(0.0);
+        dataState = true;
     }
 
     public void stopDataRetrieval(boolean stop) {
@@ -93,10 +50,6 @@ public class Scale implements ScaleInterface {
 
     public void stopConnectUsb(boolean disconnect) {
         this.disconnect = disconnect;
-    }
-
-    public BroadcastReceiver getBroadcastReceiver() {
-        return mUsbReceiver;
     }
 
     public boolean isDataPrepared() {
@@ -127,15 +80,21 @@ public class Scale implements ScaleInterface {
             }
             scaleWeight.setWeightValue(Double.valueOf(netWeightInfo[2]));
 
-            Log.v("Client_scale", ACTION_USB_PERMISSION + " " + String.valueOf(scaleWeight.getWeight()));
             dataState = true;
         }
     }
 
     public synchronized ScaleWeight getScaleWeight() {
+        if (scaleWeight.getWeight() > 5.0)
+            scaleWeight.setWeightValue(0.0);
+        scaleWeight.setWeightValue(scaleWeight.getWeight() + 0.1);
+
         return scaleWeight;
     }
 
+    public BroadcastReceiver getBroadcastReceiver() {
+        return null;
+    }
 
     private void setControlMsg() {
         int baud = 9600;
