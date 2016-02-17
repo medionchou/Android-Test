@@ -63,7 +63,7 @@ public class Client implements Runnable {
         this.mainActivity = mainActivity;
 
         SharedPreferences settings = mainActivity.getSharedPreferences("IPFILE", 0);
-        SERVER_IP = settings.getString("IP", "192.168.1.250");
+        SERVER_IP = settings.getString("IP", Command.SERVER_IP);
         SERVER_PORT = settings.getInt("PORT", 9000);
 
         buffer = new ArrayList<>();

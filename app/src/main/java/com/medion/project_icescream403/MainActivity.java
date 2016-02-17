@@ -73,10 +73,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initObject();
-
+//
 //        clientThread.start();
 //        scaleThread.start();
-
+//
         for (int i = 0; i < scales.length; i++)
             isAnyUsbConnected |= scales[i].isUsbConnected();
 
@@ -102,11 +102,11 @@ public class MainActivity extends AppCompatActivity {
                 scaleList.add(device);
             }
         }
-        /** for Debug
-        for (int i = 0; i < 4; i++) {
-            scaleList.add(null);
-        }
-        */
+        // for Debug
+//        for (int i = 0; i < 4; i++) {
+//            scaleList.add(null);
+//        }
+
 
 
         /**
@@ -533,7 +533,10 @@ public class MainActivity extends AppCompatActivity {
 
             if (newIndex != oldIndex) {
                 stopScale(oldIndex);
-                scales[scaleIndex] = new ScaleSimulator(scaleList.get(scaleIndex), MainActivity.this, String.valueOf(scaleIndex), false);
+                /**
+                 *  TODO:  Redo Scale
+                 */
+                scales[scaleIndex] = new Scale(scaleList.get(scaleIndex), MainActivity.this, String.valueOf(scaleIndex), false);
             }
 
             scaleManager.setScaleIndex(scaleIndex);
