@@ -12,7 +12,7 @@ import java.net.URLEncoder;
 public class Log {
 
     private static String site = "http://" + Command.SERVER_IP + "/wlog.php?";
-    private static String ID = "CT";
+    private static String ID = "MS_M";
 
     public static synchronized void getRequest(String words) {
 

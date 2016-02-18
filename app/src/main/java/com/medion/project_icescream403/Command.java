@@ -5,5 +5,4 @@ package com.medion.project_icescream403;
  */
 public class Command {
     public static String SERVER_IP = "192.168.1.250";
-
 }

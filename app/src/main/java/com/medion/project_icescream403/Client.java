@@ -232,19 +232,29 @@ public class Client implements Runnable {
                     Thread.sleep(1000);
                 }
             }
-        } catch (Exception e) {
+        } catch(UnknownHostException e) {
+            /*Server not exist*/
+            Log.e("MyLog", "UnknownHostException 88 "  + e.toString());
+
+        } catch(IOException e ) {
             /*Socket error*/
-            // restart activity if connection fails.
-            Log.v("MyLog", "Reconnect!!");
+            Log.e("MyLog", "IOException 92 " + e.toString());
             com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught exception in service:</font></b>" + e.toString());
-            mainActivity.runOnUiThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            mainActivity.restartActivity(States.SERVER_RESTART);
+            // restart activity if connection fails.
+            if (e.toString().contains("Server disconnect") || e.toString().contains("SocketTimeoutException") || e.toString().contains("ECONNRESET")) {
+                Log.v("MyLog", "Reconnect!!");
+                mainActivity.runOnUiThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                mainActivity.restartActivity(States.SERVER_RESTART);
+                            }
                         }
-                    }
-            );
+                );
+            }
+        } catch(InterruptedException e) {
+            /**/
+            Log.e("MyLog", "Thread sleep exceptiong 105 " + e.toString());
 
         } finally {
             try {
