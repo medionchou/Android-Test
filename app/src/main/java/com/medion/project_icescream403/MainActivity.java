@@ -554,6 +554,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 command += "<END>";
 
+
+                weight.clear();
                 recipeIndex = 0;
                 scaleManager.setRecipeIndex(recipeIndex);
                 recipeGroup.remove(0);

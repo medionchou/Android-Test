@@ -178,6 +178,7 @@ public class Client implements Runnable {
                             msg = tmp;
                         } else if (endLine.contains("AC_RANGE")) {
                             parsePrecision(endLine);
+                            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> AC_RANGE: </font></b>" + endLine);
                         }
 
                         serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
