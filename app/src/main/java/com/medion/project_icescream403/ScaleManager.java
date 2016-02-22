@@ -45,6 +45,7 @@ public class ScaleManager implements Runnable {
         alarmAudio = MediaPlayer.create(activity, R.raw.alarm);
         confirmButton = (Button) activity.findViewById(R.id.confirm);
         nextButton = (Button) activity.findViewById(R.id.nextBatch);
+
     }
 
     @Override

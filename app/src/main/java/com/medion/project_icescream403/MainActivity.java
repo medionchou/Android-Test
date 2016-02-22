@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // for Debug
+//         for Debug
 //        for (int i = 0; i < 4; i++) {
 //            scaleList.add(null);
 //        }
@@ -197,17 +197,21 @@ public class MainActivity extends AppCompatActivity {
         if (clientThread == null && scaleThread == null) {
             Log.v("MyLog", "thread is null");
             initObject();
-            if (recipeGroup != null) {
-                client.setRecipeGroup(recipeGroup);
-            }
+//            if (recipeGroup != null) {
+//                client.setRecipeGroup(recipeGroup);
+//            }
 
             if (scales.length > 0) {
                 clientThread.start();
                 scaleThread.start();
+
             } else {
                 restartActivity(States.USB_RESTART);
             }
         }
+        recipeGroupTextView.setText("配方清單");
+        layout.removeAllViews();
+        createTextView("配方內容", Color.GRAY);
     }
 
     @Override
@@ -219,9 +223,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.v("MyLog", "onStop");
-        if (recipeGroup == null) {
-            recipeGroup = client.getRecipeGroup();
-        }
+//        if (recipeGroup == null) {
+//            recipeGroup = client.getRecipeGroup();
+//        }
         clientThread.interrupt();
         scaleThread.interrupt();
         scaleManager.terminate();
