@@ -132,8 +132,10 @@ public class Client implements Runnable {
                         inputBuffer.clear();
                     }
 
-                    if (num < 0)
+                    if (num < 0) {
+
                         throw new IOException("Server disconnect");
+                    }
 
                     if (buffer.size() > 0) {
                         if (buffer.get(buffer.size() - 1) > 0) {
@@ -236,11 +238,12 @@ public class Client implements Runnable {
         } catch(UnknownHostException e) {
             /*Server not exist*/
             Log.e("MyLog", "UnknownHostException 88 "  + e.toString());
+            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught UnknowHostException in service:</font></b>" + e.toString());
 
         } catch(IOException e ) {
             /*Socket error*/
             Log.e("MyLog", "IOException 92 " + e.toString());
-            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught exception in service:</font></b>" + e.toString());
+            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught IOException in service:</font></b>" + e.toString());
             // restart activity if connection fails.
             if (e.toString().contains("Server disconnect") || e.toString().contains("SocketTimeoutException") || e.toString().contains("ECONNRESET")) {
                 Log.v("MyLog", "Reconnect!!");
@@ -256,6 +259,7 @@ public class Client implements Runnable {
         } catch(InterruptedException e) {
             /**/
             Log.e("MyLog", "Thread sleep exceptiong 105 " + e.toString());
+            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught InterruptedException in service:</font></b>" + e.toString());
 
         } finally {
             try {
@@ -308,7 +312,7 @@ public class Client implements Runnable {
 
     }
 
-    private void groupMix(String serverReply) {
+    public synchronized void groupMix(String serverReply) {
 
         String[] ingredients = serverReply.split("\\t|<N>|<END>");
         List<Recipe> item = new LinkedList<>();

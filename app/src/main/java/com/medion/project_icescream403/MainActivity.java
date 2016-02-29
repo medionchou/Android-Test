@@ -28,8 +28,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 
-import org.w3c.dom.Text;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,12 +59,17 @@ public class MainActivity extends AppCompatActivity {
     private List<String> weight;
     private Button confirmButton;
     private Button nextButton;
+//    private Button plus;
+//    private Button minus;
+//    private Button plus1;
+//    private Button minus1;
     private Timer timer;
     private ScaleInterface[] scales; //
     private TextView recipeGroupTextView;
     private MarqueeTextView runningTextView;
     private List<UsbDevice> scaleList;
     private LinearLayout layout;
+    private File historyF;
 
     private boolean isAnyUsbConnected; ///
     private int globalState;
@@ -138,6 +147,15 @@ public class MainActivity extends AppCompatActivity {
         nextButton = (Button) findViewById(R.id.nextBatch);
         nextButton.setEnabled(false);
         nextButton.setOnClickListener(new NextButtonListener());
+//        plus = (Button) findViewById(R.id.plus);
+//        minus = (Button) findViewById(R.id.minus);
+//        plus1 = (Button) findViewById(R.id.plus1);
+//        minus1 = (Button) findViewById(R.id.minus1);
+//        plus.setOnClickListener(new TestBtn(true, 0.01));
+//        minus.setOnClickListener(new TestBtn(false, 0.01));
+//        plus1.setOnClickListener(new TestBtn(true, 0.1));
+//        minus1.setOnClickListener(new TestBtn(false, 0.1));
+
         recipeGroupTextView = (TextView) findViewById(R.id.recipe_group_text_view);
         layout = (LinearLayout) findViewById(R.id.detail_recipe_layout);
         runningTextView = (MarqueeTextView) findViewById(R.id.marquee_text_view);
@@ -191,6 +209,57 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        historyF = new File(getFilesDir(), "RECIPE");
+        historyF.delete();
+    }
+
+    public void readFile() {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(historyF));
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                client.groupMix(line);
+                Log.v("MyLog", "read: " + line);
+            }
+            br.close();
+        } catch (IOException e) {
+            Log.e("MyLog", e.toString());
+        }
+    }
+
+    public void writeFile() {
+        try {
+            FileWriter fw = new FileWriter(historyF);
+            Log.v("MyLog", "Called");
+
+            if (recipeGroup != null) {
+                for (int i = 0; i < recipeGroup.size(); i++) {
+                    List<Recipe> recipes = recipeGroup.get(i);
+                    StringBuffer rebuild = new StringBuffer();
+
+                    for (int j = 0; j < recipes.size(); j++) {
+                        Recipe recipe = recipes.get(j);
+                        rebuild.append("RECIPE\t" + recipe.getIngredientID() + "\t" + recipe.getIngredientName() + "\t" + recipe.getProductID() + "\t" + recipe.getProductName() + "\t" + recipe.getWeight() + "\t" + recipe.getWeightUnit());
+                        if (j != recipes.size()-1)
+                            rebuild.append("<N>");
+                        else
+                            rebuild.append("<END>");
+                    }
+                    fw.write(rebuild.toString() + "\n");
+                    Log.v("MyLog", "write: " + rebuild.toString());
+                }
+            }
+
+            fw.close();
+        } catch (IOException e) {
+            Log.e("MyLog", e.toString());
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 
@@ -212,6 +281,7 @@ public class MainActivity extends AppCompatActivity {
         recipeGroupTextView.setText("配方清單");
         layout.removeAllViews();
         createTextView("配方內容", Color.GRAY);
+        readFile();
     }
 
     @Override
@@ -223,6 +293,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.v("MyLog", "onStop");
+        writeFile();
 //        if (recipeGroup == null) {
 //            recipeGroup = client.getRecipeGroup();
 //        }
@@ -613,4 +684,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private class TestBtn implements View.OnClickListener {
+
+        boolean flag;
+        double dd;
+
+        public TestBtn(boolean flag, double dd) {
+            this.flag = flag;
+            this.dd = dd;
+        }
+
+        @Override
+        public void onClick(View v) {
+            int index = scaleManager.getScaleIndex();
+            ScaleSimulator s = (ScaleSimulator) scales[index];
+            if (flag) {
+                double val = s.getScaleWeight().getWeight();
+                s.setScaleWeight(val + dd);
+            } else {
+                double val = s.getScaleWeight().getWeight();
+                s.setScaleWeight(val - dd);
+            }
+        }
+    }
+
 }
+

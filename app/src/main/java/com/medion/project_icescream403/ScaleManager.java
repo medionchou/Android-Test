@@ -191,7 +191,7 @@ public class ScaleManager implements Runnable {
                                 pdaDialog.dismiss();
                         }
 
-                        if (!productWeightText.equals("尚無配料資料")) {
+                        if (!productWeightText.equals("尚無配料資料") && recipeGroup.size() > 0) {
                             List<Recipe> recipeList = recipeGroup.get(0);
                             Recipe recipe = recipeList.get(recipeIndex);
 
@@ -216,8 +216,9 @@ public class ScaleManager implements Runnable {
                 });
 
 
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 Log.e("MyLog", "ScaleManager " + e.toString());
+                com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught Exception in ScaleManager:</font></b>" + e.toString());
             }
         }
     }

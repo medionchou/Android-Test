@@ -85,12 +85,13 @@ public class ScaleSimulator implements ScaleInterface {
     }
 
     public synchronized ScaleWeight getScaleWeight() {
-        if (scaleWeight.getWeight() > 5.0)
-            scaleWeight.setWeightValue(0.0);
-        scaleWeight.setWeightValue(scaleWeight.getWeight() + 0.1);
-
         return scaleWeight;
     }
+
+    public void setScaleWeight(Double val) {
+        scaleWeight.setWeightValue(val);
+    }
+
 
     public BroadcastReceiver getBroadcastReceiver() {
         return null;

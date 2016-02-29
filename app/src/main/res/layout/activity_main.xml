@@ -22,9 +22,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
-        android:paddingTop="40dp"
-        android:text="v1.0.0.0"
-        android:textColor="@android:color/white"
+        android:paddingTop="80dp"
+        android:text="配料看板v1.0.0.0"
+        android:textColor="@android:color/black"
         android:textSize="30sp"/>
 
 
@@ -58,6 +58,52 @@
         android:text="配方ID"
         android:textColor="@android:color/black"
         android:textSize="60sp" />
+
+
+
+    <!-- <Button
+        android:id="@+id/plus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_below="@+id/scale_text_view"
+        android:layout_toRightOf="@+id/recipeID_text_view"
+        android:textSize="60sp"
+        android:text="+"/>
+
+    <Button
+        android:id="@+id/minus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_below="@+id/scale_text_view"
+        android:layout_toRightOf="@+id/plus"
+        android:textSize="60sp"
+        android:text="-"/>
+
+    <Button
+        android:id="@+id/plus1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_below="@+id/scale_text_view"
+        android:layout_toRightOf="@+id/minus"
+        android:textSize="60sp"
+        android:text="P+"/>
+
+    <Button
+        android:id="@+id/minus1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_below="@+id/scale_text_view"
+        android:layout_toRightOf="@+id/plus1"
+        android:textSize="60sp"
+        android:text="P-"/> -->
 
     <ScrollView
         android:layout_width="wrap_content"

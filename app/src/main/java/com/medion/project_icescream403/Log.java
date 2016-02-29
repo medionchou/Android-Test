@@ -31,6 +31,7 @@ public class Log {
                         URL url = new URL(mySite);
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setRequestMethod("GET");
+                        conn.setConnectTimeout(5000);
                         BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
                         rd.close();
