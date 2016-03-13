@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:paddingTop="80dp"
-        android:text="配料看板v1.0.0.0"
+        android:text="配料看板v1.0.0.1"
         android:textColor="@android:color/black"
         android:textSize="30sp"/>
 
@@ -237,8 +237,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
+        android:layout_marginRight="250dp"
         android:layout_marginBottom="50dp"
-        android:layout_marginRight="50dp"
         android:text="確認"
         android:textColor="@android:color/black"
         android:textSize="60sp" />

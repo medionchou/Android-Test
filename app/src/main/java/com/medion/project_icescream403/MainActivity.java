@@ -153,8 +153,8 @@ public class MainActivity extends AppCompatActivity {
 //        minus1 = (Button) findViewById(R.id.minus1);
 //        plus.setOnClickListener(new TestBtn(true, 0.01));
 //        minus.setOnClickListener(new TestBtn(false, 0.01));
-//        plus1.setOnClickListener(new TestBtn(true, 0.1));
-//        minus1.setOnClickListener(new TestBtn(false, 0.1));
+//        plus1.setOnClickListener(new TestBtn(true, 1));
+//        minus1.setOnClickListener(new TestBtn(false, 1));
 
         recipeGroupTextView = (TextView) findViewById(R.id.recipe_group_text_view);
         layout = (LinearLayout) findViewById(R.id.detail_recipe_layout);
@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         historyF = new File(getFilesDir(), "RECIPE");
-        historyF.delete();
+//        historyF.delete();
     }
 
     public void readFile() {
@@ -222,7 +222,6 @@ public class MainActivity extends AppCompatActivity {
 
             while ((line = br.readLine()) != null) {
                 client.groupMix(line);
-                Log.v("MyLog", "read: " + line);
             }
             br.close();
         } catch (IOException e) {
@@ -232,8 +231,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void writeFile() {
         try {
-            FileWriter fw = new FileWriter(historyF);
-            Log.v("MyLog", "Called");
+            FileWriter fw = new FileWriter(historyF, false);
 
             if (recipeGroup != null) {
                 for (int i = 0; i < recipeGroup.size(); i++) {
@@ -249,7 +247,8 @@ public class MainActivity extends AppCompatActivity {
                             rebuild.append("<END>");
                     }
                     fw.write(rebuild.toString() + "\n");
-                    Log.v("MyLog", "write: " + rebuild.toString());
+
+                    com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"blue\">Write Recipe: </font></b>" + rebuild.toString());
                 }
             }
 
@@ -678,7 +677,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onClick(View v) {
             scaleManager.setPdaState(States.PDA_SCANNING);
-            scaleManager.setScaleIndex(0);
+//            scaleManager.setScaleIndex(0);
             nextButton.setEnabled(false);
         }
     }

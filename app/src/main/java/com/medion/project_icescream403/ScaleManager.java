@@ -123,18 +123,16 @@ public class ScaleManager implements Runnable {
                             client.setCmd("QUERY_REPLY\tWRONG<END>");
                         }
 
-                        if (scaleWeight >= 0)
-                            range = getRange(scaleWeight);
+                        range = getRange(productWeight);
 
                         if (range >= 0) {
-                            if (Math.abs(productWeight - scaleWeight) < (Double.valueOf(precision.get(range)) / 1000.0) && !nextButton.isEnabled()) {
-
+                            if (Math.abs(productWeight - scaleWeight) < (Double.valueOf(precision.get(range)) / 1000.0)) {
                                 enabled = true;
                             } else {
                                 enabled = false;
                             }
                         } else {
-                            if (Math.abs(productWeight - scaleWeight) < 0.1 && !nextButton.isEnabled())
+                            if (Math.abs(productWeight - scaleWeight) < 0.1)
                                 enabled = true;
                             else
                                 enabled = false;
@@ -211,7 +209,7 @@ public class ScaleManager implements Runnable {
                         else
                             scaleWeightView.setTextColor(Color.RED);
 
-                        confirmButton.setEnabled(enabled); // enabled is set to true
+                        confirmButton.setEnabled(true); // enabled is set to true
                     }
                 });
 

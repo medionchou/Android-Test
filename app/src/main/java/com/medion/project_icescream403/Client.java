@@ -161,7 +161,6 @@ public class Client implements Runnable {
                             client_state = States.CONNECT_OK;
                         } else if (endLine.contains("RECIPE") && !endLine.contains("RECIPE_DONE")) {
                             groupMix(endLine);
-                            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> RECIPE: </font></b>" + endLine);
                         } else if (endLine.contains("PDA_ON<END>")) {
                             Message msg = mHandler.obtainMessage();
                             msg.what = States.PDA_CONNECTED;
@@ -317,10 +316,14 @@ public class Client implements Runnable {
         String[] ingredients = serverReply.split("\\t|<N>|<END>");
         List<Recipe> item = new LinkedList<>();
 
+        com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> RECIPE: </font></b>" + serverReply);
+
+        Log.v("MyLog", serverReply);
+
         for (int i = 0; i < ingredients.length; i = i + 7) {
             item.add(new Recipe(ingredients[i + 1], ingredients[i + 2], ingredients[i + 3], ingredients[i + 4], Double.parseDouble(ingredients[i + 5]), ingredients[i + 6]));
-
         }
+
         recipeGroup.add(item);
         mainActivity.retainRecipe(recipeGroup);
 
