@@ -64,8 +64,6 @@ public class Scale implements ScaleInterface {
         ACTION_USB_PERMISSION += "_" + permission;
 
 
-        Log.v("Client", ACTION_USB_PERMISSION + " " + this.usbDevice.toString());
-
 
         /*send msg to broadcastReceiver*/
         PendingIntent pendingIntent = PendingIntent.getBroadcast(activity, 0, new Intent(ACTION_USB_PERMISSION), 0);

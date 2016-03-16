@@ -74,6 +74,7 @@ public class Client implements Runnable {
     public void run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
         setUpConnection();
+
     }
 
     private void setUpConnection() {
@@ -184,7 +185,6 @@ public class Client implements Runnable {
 
                         serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
                     }
-
 
                     // socket write if string cmd not empty
                     switch (client_state) {
@@ -317,8 +317,6 @@ public class Client implements Runnable {
         List<Recipe> item = new LinkedList<>();
 
         com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> RECIPE: </font></b>" + serverReply);
-
-        Log.v("MyLog", serverReply);
 
         for (int i = 0; i < ingredients.length; i = i + 7) {
             item.add(new Recipe(ingredients[i + 1], ingredients[i + 2], ingredients[i + 3], ingredients[i + 4], Double.parseDouble(ingredients[i + 5]), ingredients[i + 6]));

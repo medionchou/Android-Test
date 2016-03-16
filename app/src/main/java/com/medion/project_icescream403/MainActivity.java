@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        historyF =  new File(getFilesDir(), "RECIPE");
+
         initObject();
 
 //        clientThread.start();
@@ -92,6 +94,10 @@ public class MainActivity extends AppCompatActivity {
         if (scales.length > 0 && isAnyUsbConnected) {
             clientThread.start();
             scaleThread.start();
+            recipeGroupTextView.setText("配方清單");
+            layout.removeAllViews();
+            createTextView("配方內容", Color.GRAY);
+            readFile();
         } else {
             restartActivity(States.USB_RESTART);
         }
@@ -211,7 +217,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        historyF = new File(getFilesDir(), "RECIPE");
 //        historyF.delete();
     }
 
@@ -231,28 +236,30 @@ public class MainActivity extends AppCompatActivity {
 
     public void writeFile() {
         try {
-            FileWriter fw = new FileWriter(historyF, false);
 
             if (recipeGroup != null) {
-                for (int i = 0; i < recipeGroup.size(); i++) {
-                    List<Recipe> recipes = recipeGroup.get(i);
-                    StringBuffer rebuild = new StringBuffer();
+                if (recipeGroup.size() > 0) {
+                    FileWriter fw = new FileWriter(historyF, false);
+                    for (int i = 0; i < recipeGroup.size(); i++) {
+                        List<Recipe> recipes = recipeGroup.get(i);
+                        StringBuffer rebuild = new StringBuffer();
 
-                    for (int j = 0; j < recipes.size(); j++) {
-                        Recipe recipe = recipes.get(j);
-                        rebuild.append("RECIPE\t" + recipe.getIngredientID() + "\t" + recipe.getIngredientName() + "\t" + recipe.getProductID() + "\t" + recipe.getProductName() + "\t" + recipe.getWeight() + "\t" + recipe.getWeightUnit());
-                        if (j != recipes.size()-1)
-                            rebuild.append("<N>");
-                        else
-                            rebuild.append("<END>");
+                        for (int j = 0; j < recipes.size(); j++) {
+                            Recipe recipe = recipes.get(j);
+                            rebuild.append("RECIPE\t" + recipe.getIngredientID() + "\t" + recipe.getIngredientName() + "\t" + recipe.getProductID() + "\t" + recipe.getProductName() + "\t" + recipe.getWeight() + "\t" + recipe.getWeightUnit());
+                            if (j != recipes.size() - 1)
+                                rebuild.append("<N>");
+                            else
+                                rebuild.append("<END>");
+                        }
+                        fw.write(rebuild.toString() + "\n");
+
+                        com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"blue\">Write Recipe: </font></b>" + rebuild.toString());
                     }
-                    fw.write(rebuild.toString() + "\n");
-
-                    com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"blue\">Write Recipe: </font></b>" + rebuild.toString());
+                    fw.close();
                 }
             }
 
-            fw.close();
         } catch (IOException e) {
             Log.e("MyLog", e.toString());
         }
@@ -265,22 +272,18 @@ public class MainActivity extends AppCompatActivity {
         if (clientThread == null && scaleThread == null) {
             Log.v("MyLog", "thread is null");
             initObject();
-//            if (recipeGroup != null) {
-//                client.setRecipeGroup(recipeGroup);
-//            }
 
             if (scales.length > 0) {
                 clientThread.start();
                 scaleThread.start();
-
             } else {
                 restartActivity(States.USB_RESTART);
             }
+            recipeGroupTextView.setText("配方清單");
+            layout.removeAllViews();
+            createTextView("配方內容", Color.GRAY);
+            readFile();
         }
-        recipeGroupTextView.setText("配方清單");
-        layout.removeAllViews();
-        createTextView("配方內容", Color.GRAY);
-        readFile();
     }
 
     @Override
@@ -677,7 +680,6 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onClick(View v) {
             scaleManager.setPdaState(States.PDA_SCANNING);
-//            scaleManager.setScaleIndex(0);
             nextButton.setEnabled(false);
         }
     }
