@@ -209,7 +209,7 @@ public class ScaleManager implements Runnable {
                         else
                             scaleWeightView.setTextColor(Color.RED);
 
-                        confirmButton.setEnabled(enabled); // enabled is set to true
+                        confirmButton.setEnabled(true); // enabled is set to true
                     }
                 });
 

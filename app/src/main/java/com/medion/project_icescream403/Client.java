@@ -79,7 +79,7 @@ public class Client implements Runnable {
 
     private void setUpConnection() {
         try {
-            com.medion.project_icescream403.Log.getRequest("<h2>*** Client Start ***</h2>");
+//            com.medion.project_icescream403.Log.getRequest("<h2>*** Client Start ***</h2>");
             while (!isTerminated) {
                 if (socketChannel == null) {
 
@@ -172,7 +172,7 @@ public class Client implements Runnable {
                             mHandler.sendMessage(msg);
                         } else if (endLine.contains("QUERY_SPICE")) {
                             serialNum = endLine.split("\\t|<END>")[1];
-                            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> QUERY_SPICE: </font></b>" + endLine);
+//                            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> QUERY_SPICE: </font></b>" + endLine);
                         } else if (endLine.contains("MSG")) {
                             String tmp;
                             tmp = endLine.replace("<END>", "");
@@ -180,7 +180,7 @@ public class Client implements Runnable {
                             msg = tmp;
                         } else if (endLine.contains("AC_RANGE")) {
                             parsePrecision(endLine);
-                            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> AC_RANGE: </font></b>" + endLine);
+//                            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> AC_RANGE: </font></b>" + endLine);
                         }
 
                         serverReplayBuffer = serverReplayBuffer.replace(endLine, "");
@@ -199,7 +199,7 @@ public class Client implements Runnable {
                         case States.CONNECT_OK:
                             if (cmd.length() > 0) {
                                 Log.v("MyLog", cmd);
-                                com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"blue\">Send Command: </font></b>" + cmd);
+//                                com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"blue\">Send Command: </font></b>" + cmd);
                                 outStream = CharBuffer.wrap(cmd);
                                 while (outStream.hasRemaining()) {
                                     socketChannel.write(Charset.defaultCharset().encode(outStream));
@@ -237,12 +237,12 @@ public class Client implements Runnable {
         } catch(UnknownHostException e) {
             /*Server not exist*/
             Log.e("MyLog", "UnknownHostException 88 "  + e.toString());
-            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught UnknowHostException in service:</font></b>" + e.toString());
+//            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught UnknowHostException in service:</font></b>" + e.toString());
 
         } catch(IOException e ) {
             /*Socket error*/
             Log.e("MyLog", "IOException 92 " + e.toString());
-            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught IOException in service:</font></b>" + e.toString());
+//            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught IOException in service:</font></b>" + e.toString());
             // restart activity if connection fails.
             if (e.toString().contains("Server disconnect") || e.toString().contains("SocketTimeoutException") || e.toString().contains("ECONNRESET")) {
                 Log.v("MyLog", "Reconnect!!");
@@ -258,7 +258,7 @@ public class Client implements Runnable {
         } catch(InterruptedException e) {
             /**/
             Log.e("MyLog", "Thread sleep exceptiong 105 " + e.toString());
-            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught InterruptedException in service:</font></b>" + e.toString());
+//            com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"red\">Caught InterruptedException in service:</font></b>" + e.toString());
 
         } finally {
             try {
@@ -316,7 +316,7 @@ public class Client implements Runnable {
         String[] ingredients = serverReply.split("\\t|<N>|<END>");
         List<Recipe> item = new LinkedList<>();
 
-        com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> RECIPE: </font></b>" + serverReply);
+//        com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"#7AC405\"> RECIPE: </font></b>" + serverReply);
 
         for (int i = 0; i < ingredients.length; i = i + 7) {
             item.add(new Recipe(ingredients[i + 1], ingredients[i + 2], ingredients[i + 3], ingredients[i + 4], Double.parseDouble(ingredients[i + 5]), ingredients[i + 6]));
