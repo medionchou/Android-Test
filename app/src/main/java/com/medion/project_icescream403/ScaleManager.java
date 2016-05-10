@@ -1,8 +1,11 @@
 package com.medion.project_icescream403;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.media.MediaPlayer;
+import android.net.sip.SipSession;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
@@ -180,8 +183,41 @@ public class ScaleManager implements Runnable {
                         if (pdaState == States.PDA_SCANNING) {
                             pdaDialog.setTitle(activity.setDialogText(activity.getString(R.string.pda_progress_status), 1));
                             pdaDialog.setMessage(activity.setDialogText(productID + " " + productName, 3));
-                            pdaDialog.show();
+                            pdaDialog.setButton(DialogInterface.BUTTON_POSITIVE, MainActivity.setDialogText("刪除目前配方", 2), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+                                    builder.setTitle(MainActivity.setDialogText("請注意", 2));
+                                    builder.setMessage(MainActivity.setDialogText("將刪除配方: " + ingredientName, 2));
+                                    builder.setPositiveButton(MainActivity.setDialogText("確認", 2), new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            recipeIndex = 0;
+                                            recipeGroup.remove(0);
+                                            activity.drawDetailRecipe(recipeIndex);
+                                            TextView recipeGroupTextView = (TextView) activity.findViewById(R.id.recipe_group_text_view);
+                                            if (recipeGroup.size() != 0) {
+                                                activity.drawRecipeGroup();
+                                                pdaState = States.PDA_SCANNING;
+                                            } else {
+                                                recipeGroupTextView.setText("配方清單");
+                                                client.setSerialNumber("");
+                                                pdaState = States.PDA_IDLING;
+                                            }
+                                        }
+                                    });
+                                    builder.setNegativeButton(MainActivity.setDialogText("取消", 2), new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            pdaState = States.PDA_SCANNING;
+                                        }
+                                    });
+                                    builder.setCancelable(false);
+                                    builder.show();
+                                }
+                            });
                             pdaDialog.setCancelable(false);
+                            pdaDialog.show();
                             pdaState = States.PDA_IDLING;
                             Log.v("MyLog", "Waiting PDA Scanning");
                         } else if (pdaState == States.PDA_SCANNING_CORRECT) {
@@ -209,7 +245,7 @@ public class ScaleManager implements Runnable {
                         else
                             scaleWeightView.setTextColor(Color.RED);
 
-                        confirmButton.setEnabled(true); // enabled is set to true
+                        confirmButton.setEnabled(enabled); // enabled is set to true
                     }
                 });
 

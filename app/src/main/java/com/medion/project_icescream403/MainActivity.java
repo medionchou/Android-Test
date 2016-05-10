@@ -484,7 +484,7 @@ public class MainActivity extends AppCompatActivity {
         scaleManager.setPrecision(precision);
     }
 
-    public SpannableString setDialogText(String text, float size) {
+    public static SpannableString setDialogText(String text, float size) {
         SpannableString ss = new SpannableString(text);
         ss.setSpan(new RelativeSizeSpan(size), 0, ss.length(), 0);
         return ss;
@@ -506,7 +506,7 @@ public class MainActivity extends AppCompatActivity {
         return globalState;
     }
 
-    private void drawDetailRecipe(int index) {
+    public void drawDetailRecipe(int index) {
         final int pos = index;
 
         runOnUiThread(new Runnable() {
@@ -542,7 +542,7 @@ public class MainActivity extends AppCompatActivity {
         layout.addView(tv);
     }
 
-    private void drawRecipeGroup() {
+    public void drawRecipeGroup() {
         String contents = "配方清單\n";
         final String result;
         int count = 0;
@@ -638,10 +638,8 @@ public class MainActivity extends AppCompatActivity {
                 recipeGroup.remove(0);
                 drawDetailRecipe(scaleManager.getRecipeIndex());
 
-                if (recipeGroup.size() != 0)
-                    drawRecipeGroup();
-                else
-                    recipeGroupTextView.setText("配方清單");
+                if (recipeGroup.size() != 0) drawRecipeGroup();
+                else recipeGroupTextView.setText("配方清單");
 
                 client.setCmd(command);
 
