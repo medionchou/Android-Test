@@ -87,6 +87,10 @@ public class MainActivity extends AppCompatActivity {
 
 //        clientThread.start();
 //        scaleThread.start();
+//        recipeGroupTextView.setText("配方清單");
+//        layout.removeAllViews();
+//        createTextView("配方內容", Color.GRAY);
+//        readFile();
 
         for (int i = 0; i < scales.length; i++)
             isAnyUsbConnected |= scales[i].isUsbConnected();
@@ -240,6 +244,7 @@ public class MainActivity extends AppCompatActivity {
             if (recipeGroup != null) {
                 if (recipeGroup.size() > 0) {
                     FileWriter fw = new FileWriter(historyF, false);
+                    Log.v("MyLog", "Writing");
                     for (int i = 0; i < recipeGroup.size(); i++) {
                         List<Recipe> recipes = recipeGroup.get(i);
                         StringBuffer rebuild = new StringBuffer();
@@ -257,6 +262,8 @@ public class MainActivity extends AppCompatActivity {
                         com.medion.project_icescream403.Log.getRequest("<b><font size=\"5\" color=\"blue\">Write Recipe: </font></b>" + rebuild.toString());
                     }
                     fw.close();
+                } else {
+                    historyF.delete();
                 }
             }
 
